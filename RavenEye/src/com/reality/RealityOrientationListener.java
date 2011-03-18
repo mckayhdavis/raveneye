@@ -121,7 +121,7 @@ public class RealityOrientationListener implements SensorEventListener,
         values[1] *= rad2deg; // pitch
         values[2] *= rad2deg; // roll
         
-        //values[0] -= mDeclination;
+        values[0] -= mDeclination;
         
         // Convert the (-180,180] range to [0,360).
         if (values[0] < 0) {

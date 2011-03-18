@@ -37,7 +37,7 @@ public class RealityActivity extends Activity implements SensorEventListener,
 		LocationListener {
 
 	public static final String TAG = "RealityActivity";
-	public static final boolean USE_CAMERA = false;
+	public static final boolean USE_CAMERA = true;
 
 	private Camera camera;
 	private SurfaceView preview = null;
