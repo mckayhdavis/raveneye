@@ -10,6 +10,7 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
+import android.util.Log;
 
 /**
  * This class is responsible for interpreting the orientation of the device and ensuring smooth and
@@ -101,7 +102,7 @@ public class RealityOrientationListener implements SensorEventListener,
             SensorManager.remapCoordinateSystem(mR, SensorManager.AXIS_X,
                     SensorManager.AXIS_Z, mOutR);
             
-            SensorManager.getOrientation(mOutR, values);
+            SensorManager.getOrientation(mOutR, values);            
             
             filterValues(values); // filter sensor noise
             //lightFilterValues(values); // filter sensor noise
