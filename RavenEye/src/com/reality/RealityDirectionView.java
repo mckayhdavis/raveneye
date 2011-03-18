@@ -42,6 +42,8 @@ public class RealityDirectionView extends SensorView {
 	public void onDraw(Canvas canvas) {
 		if (mBitmap != null) {
 			synchronized (this) {
+                //canvas.getMatrix().postSkew(0.1f, 0.6f, 0.4f, 0.3f);
+
 				// Rotate the canvas according to the device orientation.
 				canvas.rotate(-mOrientation[0], mCenterX, mCenterY);
 

@@ -330,7 +330,6 @@ public class RealityActivity extends Activity implements SensorEventListener,
 		Place place8 = new Place("South", "description", "NA", loc8);
 		Place place9 = new Place("West", "description", "NA", loc9);
 		Place place10 = new Place("Doug's", "description", "NA", loc10);
-		Place place11 = new Place("North 2", "description", "NA", loc11);
 		Place place12 = new Place("Random place", "description", "NA", loc12);
 
 		places.add(place1);
@@ -343,7 +342,6 @@ public class RealityActivity extends Activity implements SensorEventListener,
 		places.add(place8);
 		places.add(place9);
 		places.add(place10);
-		places.add(place11);
 		places.add(place12);
 
 		return places;
