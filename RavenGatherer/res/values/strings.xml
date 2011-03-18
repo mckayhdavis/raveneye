@@ -2,4 +2,9 @@
 <resources>
     <string name="hello">Hello World, MainActivity!</string>
     <string name="app_name">RavenGatherer</string>
+    <string name="local_service_started">Started</string>
+    <string name="local_service_stopped">Stopped</string>
+    <string name="local_service_label">Location Gatherer</string>
+    <string name="local_service_connected">Connected</string>
+    <string name="local_service_disconnected">Disconnected</string>
 </resources>
