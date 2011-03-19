@@ -29,4 +29,8 @@ public class Coordinate implements Serializable {
 		this.longitude = longitude;
 	}
 
+	public String toString() {
+		return "(" + latitude + "," + longitude + ")";
+	}
+
 }

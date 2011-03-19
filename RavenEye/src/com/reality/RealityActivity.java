@@ -45,6 +45,7 @@ public class RealityActivity extends Activity implements SensorEventListener,
 
 	private LocationManager mLocationManager;
 	private SensorManager mSensorManager;
+	private DirectionManager mDirectionManager = null;
 
 	public static final int MIN_TIME_BETWEEN_LOCATION_UPDATES = 1000;
 	public static final int MIN_DISTANCE_BETWEEN_LOCATION_UPDATES = 3;
@@ -129,11 +130,6 @@ public class RealityActivity extends Activity implements SensorEventListener,
 			}
 		}
 		new DownloadPlacesTask().execute(places);
-
-		Log.d(TAG, "onCreate()");
-
-		mLoadingDialog = ProgressDialog.show(this, "",
-				"Loading. Please wait...", true);
 	}
 
 	@Override
@@ -224,6 +220,13 @@ public class RealityActivity extends Activity implements SensorEventListener,
 	private class DownloadPlacesTask extends
 			AsyncTask<Object[], Void, List<Place>> {
 		protected List<Place> doInBackground(Object[]... p) {
+			runOnUiThread(new Runnable() {
+				public void run() {
+					mLoadingDialog = ProgressDialog.show(RealityActivity.this,
+							"", "Loading. Please wait...", true);
+				}
+			});
+
 			List<Place> placeList = null;
 
 			Object[] places = p[0];
@@ -267,6 +270,48 @@ public class RealityActivity extends Activity implements SensorEventListener,
 				}
 
 			});
+		}
+
+	}
+
+	private class DownloadDirectionsTask extends
+			AsyncTask<Void, Void, Waypoint> {
+		protected Waypoint doInBackground(Void... params) {
+			runOnUiThread(new Runnable() {
+				public void run() {
+					mLoadingDialog = ProgressDialog.show(RealityActivity.this,
+							"", "Loading directions. Please wait...", true);
+				}
+			});
+
+			// Download the way-points.
+			Waypoint startWaypoint = XmlReader.getWaypoints();
+
+			Directions directions = new Directions(startWaypoint);
+
+			mDirectionManager = new DirectionManager();
+			mDirectionManager.setDirections(directions);
+
+			return startWaypoint;
+		}
+
+		protected void onPostExecute(final Waypoint waypoint) {
+			if (mDirectionView == null) {
+				mDirectionView = (RealityDirectionView) ((ViewStub) findViewById(R.id.directions_stub))
+						.inflate();
+			} else {
+				mDirectionView.setVisibility(View.VISIBLE);
+			}
+
+			mDirectionManager.registerObserver(mDirectionView);
+
+			mOrientationListener.registerForUpdates(mDirectionView);
+			mLocationListener.registerForUpdates(mDirectionManager);
+
+			mDirectionView.setWillNotDraw(false);
+
+			mLoadingDialog.dismiss();
+			mLoadingDialog = null;
 		}
 
 	}
@@ -395,27 +440,19 @@ public class RealityActivity extends Activity implements SensorEventListener,
 		// Handle item selection
 		switch (item.getItemId()) {
 		case R.id.navigate:
-			if (mDirectionView == null) {
-				mDirectionView = (RealityDirectionView) ((ViewStub) findViewById(R.id.directions_stub))
-						.inflate();
+			if (mDirectionView == null
+					|| mDirectionView.getVisibility() == View.GONE) {
+				new DownloadDirectionsTask().execute();
 
-				mOrientationListener.registerForUpdates(mDirectionView);
-				mDirectionView.setWillNotDraw(false);
 				item.setTitle("Stop Navigation");
 			} else {
-				if (mDirectionView.getVisibility() == View.VISIBLE) {
-					mDirectionView.setVisibility(View.GONE);
+				mOrientationListener.deregister(mDirectionView);
+				mLocationListener.deregisterForUpdates(mDirectionManager);
 
-					mOrientationListener.deregister(mDirectionView);
-					mDirectionView.setWillNotDraw(true);
-					item.setTitle("Start Navigation");
-				} else {
-					mDirectionView.setVisibility(View.VISIBLE);
+				mDirectionView.setVisibility(View.GONE);
+				mDirectionView.setWillNotDraw(true);
 
-					mOrientationListener.registerForUpdates(mDirectionView);
-					mDirectionView.setWillNotDraw(false);
-					item.setTitle("Stop Navigation");
-				}
+				item.setTitle("Start Navigation");
 			}
 
 			return true;

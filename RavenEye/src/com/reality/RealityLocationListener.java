@@ -22,19 +22,18 @@ public class RealityLocationListener implements LocationListener {
 
 	public void registerForUpdates(LocationListener observer) {
 		mObservers.add(observer);
+	}
 
-		/*
-		 * if (mDeviceLocation != null) {
-		 * observer.onLocationChanged(mDeviceLocation); }
-		 */
+	public void deregisterForUpdates(LocationListener observer) {
+		mObservers.remove(observer);
 	}
 
 	public void registerForStatusUpdates(LocationListener observer) {
 		mStatusObservers.add(observer);
 	}
 
-	public void deregister(LocationListener observer) {
-		mObservers.remove(observer);
+	public void deregisterForStatusUpdates(LocationListener observer) {
+		mStatusObservers.remove(observer);
 	}
 
 	/**
