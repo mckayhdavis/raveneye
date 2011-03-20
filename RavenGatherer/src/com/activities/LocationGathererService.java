@@ -37,8 +37,8 @@ public class LocationGathererService extends Service implements
 	// We use it on Notification start, and to cancel it.
 	private int NOTIFICATION = R.string.local_service_started;
 
-	public static final int MIN_TIME_BETWEEN_LOCATION_UPDATES = 1000;
-	public static final int MIN_DISTANCE_BETWEEN_LOCATION_UPDATES = 3;
+	public static final int MIN_TIME_BETWEEN_LOCATION_UPDATES = 2000;
+	public static final int MIN_DISTANCE_BETWEEN_LOCATION_UPDATES = 8;
 
 	/**
 	 * Class for clients to access. Because we know this service always runs in
@@ -159,9 +159,8 @@ public class LocationGathererService extends Service implements
 	public void onLocationChanged(Location location) {
 		Log.d(TAG, "onLocationChanged() " + location);
 
-		Coordinate coord = new Coordinate(
-				(int) (location.getLatitude() * 1000000),
-				(int) (location.getLongitude() * 1000000));
+		Coordinate coord = new Coordinate(location.getLatitude(),
+				location.getLongitude());
 
 		mLocationBroadcast.putExtra(Coordinate.class.toString(), coord);
 		mLocationBroadcast.putExtra("count", ++mLocationUpdateCount);

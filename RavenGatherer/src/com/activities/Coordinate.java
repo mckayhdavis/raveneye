@@ -9,10 +9,10 @@ public class Coordinate implements Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	public int x;
-	public int y;
+	public double x;
+	public double y;
 
-	public Coordinate(int x, int y) {
+	public Coordinate(double x, double y) {
 		this.x = x;
 		this.y = y;
 	}
