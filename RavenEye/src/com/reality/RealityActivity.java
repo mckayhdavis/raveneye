@@ -32,6 +32,14 @@ import android.view.ViewStub;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.common.Coordinate;
+import com.common.DirectionEvent;
+import com.common.DirectionManager;
+import com.common.DirectionObserver;
+import com.common.Directions;
+import com.common.Place;
+import com.common.Waypoint;
+
 public class RealityActivity extends Activity implements SensorEventListener,
 		DirectionObserver {
 

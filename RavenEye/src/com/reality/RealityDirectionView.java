@@ -1,6 +1,5 @@
 package com.reality;
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Camera;
@@ -9,12 +8,10 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.hardware.SensorEvent;
-import android.location.Location;
-import android.os.AsyncTask;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.View;
-import android.view.ViewStub;
+
+import com.common.DirectionEvent;
+import com.common.DirectionObserver;
 
 public class RealityDirectionView extends SensorView implements
 		DirectionObserver {
@@ -58,15 +55,14 @@ public class RealityDirectionView extends SensorView implements
 
 	@Override
 	public void onDraw(Canvas canvas) {
+		final Paint paint = mPaint;
+
 		synchronized (this) {
 			// Rotate the canvas according to the device orientation.
-
-			// canvas.drawBitmap(mBitmap, mBitmapX, mBitmapY, null);
-
 			canvas.rotate(-mOrientation[0] + mHeading, mCenterX, mCenterY);
 
-			canvas.drawPath(mPath, mPaint);
-			canvas.drawCircle(mCenterX, mCenterY, mRadius - 37, mPaint);
+			canvas.drawPath(mPath, paint);
+			canvas.drawCircle(mCenterX, mCenterY, mRadius - 37, paint);
 
 			// //////
 
@@ -101,7 +97,7 @@ public class RealityDirectionView extends SensorView implements
 			// camera.applyToCanvas(canvas);
 			//
 			// canvas.drawPath(mPath, mPaint);
-			// canvas.drawCircle(mCenterX, mCenterY, mRadius - 37, mPaint);
+			// canvas.drawCircle(mCenterX, mCenterY, mRadius - 37, paint);
 			//
 			// camera.restore();
 
@@ -112,55 +108,26 @@ public class RealityDirectionView extends SensorView implements
 
 	@Override
 	protected void onSizeChanged(int width, int height, int oldw, int oldh) {
-		synchronized (this) {
-			if (!mInitialized) {
-				int diameter = width < height ? width - 100 : height - 100;
-				mCenterX = width / 2;
-				mCenterY = height / 2;
+		if (!mInitialized) {
+			int diameter = width < height ? width - 100 : height - 100;
 
-				mRadius = (diameter / 2);
+			mCenterX = width / 2;
+			mCenterY = height / 2;
 
-				mPath = new Path();
-				mPath.moveTo(mCenterX, mCenterY - mRadius - 10);
-				mPath.lineTo(mCenterX - 15, mCenterY - mRadius);
-				mPath.lineTo(mCenterX + 15, mCenterY - mRadius);
-				// path.addArc(new RectF(140, 180, 180, 220), 180, 180);
-				mPath.lineTo(mCenterX, mCenterY - mRadius - 10);
-				mPath.close();
+			mRadius = (diameter / 2);
 
-				// mBitmapX = mCenterX - mRadius;
-				// mBitmapY = mCenterY - mRadius;
-				//
-				// unbindBitmaps();
-				//
-				// mBitmap = Bitmap.createBitmap(diameter, diameter,
-				// Bitmap.Config.ARGB_4444);
-				//
-				// mCanvas = new Canvas(mBitmap);
-				//
-				// Path path = new Path();
-				// path.moveTo(mRadius, 10);
-				// path.lineTo(mRadius - 15, 22);
-				// path.lineTo(mRadius + 15, 22);
-				// // path.addArc(new RectF(140, 180, 180, 220), 180, 180);
-				// path.lineTo(mRadius, 10);
-				// path.close();
-				//
-				// mCanvas.drawPath(path, mPaint);
-				// mCanvas.drawCircle(mRadius, mRadius, mRadius - 37, mPaint);
+			mPath = new Path();
+			mPath.moveTo(mCenterX, mCenterY - mRadius - 10);
+			mPath.lineTo(mCenterX - 15, mCenterY - mRadius);
+			mPath.lineTo(mCenterX + 15, mCenterY - mRadius);
+			// path.addArc(new RectF(140, 180, 180, 220), 180, 180);
+			mPath.lineTo(mCenterX, mCenterY - mRadius - 10);
+			mPath.close();
 
-				mInitialized = true;
-			}
+			mInitialized = true;
 		}
 
 		super.onSizeChanged(width, height, oldw, oldh);
-	}
-
-	@Override
-	public void onLocationChanged(Location location) {
-		/*
-		 * Check way-points.
-		 */
 	}
 
 	public void onSensorChanged(SensorEvent event) {
@@ -168,38 +135,28 @@ public class RealityDirectionView extends SensorView implements
 		 * Orient the directional arrow.
 		 */
 
-		final float[] values = event.values;
+		final float[] storedValues = mOrientation;
+		float difference;
 
-		mOrientation[0] = values[0];
-		mOrientation[1] = values[1];
-		mOrientation[2] = values[2];
-
-		float diff = Math.abs(values[0] - mHeading);
-		if (diff < 10 || diff > 350) {
-			mPaint.setARGB(100, 0, 255, 0);
-		} else if (diff < 30 || diff > 330) {
-			mPaint.setARGB(100, 255, 255, 0);
-		} else if (diff < 50 || diff > 310) {
-			mPaint.setARGB(100, 255, 165, 0);
-		} else {
-			mPaint.setARGB(100, 255, 0, 0);
-		}
-	}
-
-	public void unbindBitmaps() {
 		synchronized (this) {
-			/*
-			 * The bitmap will need to be recreated next time.
-			 */
-			mInitialized = false;
+			final float[] values = event.values;
 
-			if (mBitmap != null) {
-				mBitmap.recycle();
-			}
-
-			mBitmap = null;
-			mCanvas = null;
+			storedValues[0] = values[0];
+			storedValues[1] = values[1];
+			storedValues[2] = values[2];
 		}
+
+		difference = Math.abs(storedValues[0] - mHeading);
+
+		// We cross north (0 degrees).
+		if (difference > 180) {
+			difference = 360 - difference;
+		}
+
+		float alpha = (difference / 180);
+		float beta = 1 - alpha;
+
+		mPaint.setARGB(100, (int) (alpha * 255), (int) (beta * 255), 0);
 	}
 
 	public void onDirectionsChanged(DirectionEvent event) {
@@ -210,8 +167,6 @@ public class RealityDirectionView extends SensorView implements
 		}
 
 		mHeading = event.bearing;
-
-		Log.d(TAG, "[HEAD] " + mHeading);
 	}
 
 }

@@ -31,6 +31,9 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.common.Coordinate;
+import com.common.Place;
+
 public class PlacesListActivity extends ListActivity {
 
 	private ProgressDialog mProgressDialog = null;

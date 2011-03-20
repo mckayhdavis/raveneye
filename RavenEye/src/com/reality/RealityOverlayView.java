@@ -11,9 +11,11 @@ import android.graphics.Paint;
 import android.graphics.Paint.Align;
 import android.hardware.SensorEvent;
 import android.location.Location;
-import android.location.LocationListener;
 import android.util.AttributeSet;
 import android.util.Log;
+
+import com.common.Coordinate;
+import com.common.Place;
 
 /**
  * This class handles the drawing of different overlay views on the canvas. It is responsible for

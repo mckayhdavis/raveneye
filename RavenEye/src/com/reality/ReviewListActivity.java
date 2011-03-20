@@ -22,6 +22,9 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.common.Place;
+import com.common.Review;
+
 public class ReviewListActivity extends ListActivity {
 
 	private LinearLayout mLoadingPanel;

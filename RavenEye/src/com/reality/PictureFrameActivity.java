@@ -2,19 +2,18 @@ package com.reality;
 
 import java.util.ArrayList;
 
+import com.reality.R;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.Gallery;
 import android.widget.ImageView;
-import android.widget.Toast;
-import com.reality.R;
+
+import com.common.Place;
 
 
 public class PictureFrameActivity extends Activity {

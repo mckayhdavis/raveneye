@@ -12,6 +12,8 @@ import android.hardware.SensorEvent;
 import android.util.AttributeSet;
 import android.util.Log;
 
+import com.common.Place;
+
 public class RealitySmallCompassView extends SensorView {
 
 	public static final String TAG = RealityActivity.TAG;// "RealityCompassView";

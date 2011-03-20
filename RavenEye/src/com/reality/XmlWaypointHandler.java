@@ -4,6 +4,9 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import com.common.Coordinate;
+import com.common.Waypoint;
+
 public class XmlWaypointHandler extends DefaultHandler {
 
 	private Waypoint mWaypoint = null;
