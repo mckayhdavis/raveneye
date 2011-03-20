@@ -44,7 +44,13 @@
         android:shadowColor="#000000"
         android:text="N"
         android:width="75dip" />
-    <include
-        android:id="@+id/place_description"
-        layout="@layout/reality_descriptor" />
+    <!-- <include -->
+    <!-- android:id="@+id/place_description" -->
+    <!-- layout="@layout/reality_descriptor" /> -->
+    <TextView
+        android:text="TextView"
+        android:id="@+id/status_output"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left|bottom"></TextView>
 </FrameLayout>
