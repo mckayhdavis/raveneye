@@ -1,14 +1,20 @@
 package com.reality;
 
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Camera;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.hardware.SensorEvent;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.View;
+import android.view.ViewStub;
 
 public class RealityDirectionView extends SensorView implements
 		DirectionObserver {
@@ -21,6 +27,7 @@ public class RealityDirectionView extends SensorView implements
 	private int mHeading = 0; // The destination direction.
 
 	private boolean mInitialized = false;
+	private boolean mHasDirections = false;
 
 	private int mRadius;
 
@@ -29,11 +36,12 @@ public class RealityDirectionView extends SensorView implements
 
 	private Path mPath = null;
 
-	// private int mBitmapX;
-	// private int mBitmapY;
+	private int mBitmapX;
+	private int mBitmapY;
 
-	// private Canvas mCanvas = null;
-	// private Bitmap mBitmap = null;
+	private Canvas mCanvas = null;
+	private Bitmap mBitmap = null;
+	private Camera mCamera;
 
 	public RealityDirectionView(Context context, AttributeSet attr) {
 		super(context, attr);
@@ -42,22 +50,63 @@ public class RealityDirectionView extends SensorView implements
 		mPaint.setStrokeWidth(15);
 		mPaint.setStyle(Paint.Style.STROKE);
 		mPaint.setShadowLayer(10, 5, 5, Color.BLACK);
+
+		mCamera = new Camera();
+
+		this.setWillNotDraw(true);
 	}
 
 	@Override
 	public void onDraw(Canvas canvas) {
-		if (mPath != null) {
-			synchronized (this) {
-				// canvas.getMatrix().postSkew(0.1f, 0.6f, 0.4f, 0.3f);
+		synchronized (this) {
+			// Rotate the canvas according to the device orientation.
 
-				// Rotate the canvas according to the device orientation.
-				canvas.rotate(-mOrientation[0] + mHeading, mCenterX, mCenterY);
+			// canvas.drawBitmap(mBitmap, mBitmapX, mBitmapY, null);
 
-				canvas.drawPath(mPath, mPaint);
-				canvas.drawCircle(mCenterX, mCenterY, mRadius - 37, mPaint);
+			canvas.rotate(-mOrientation[0] + mHeading, mCenterX, mCenterY);
 
-				// canvas.drawBitmap(mBitmap, mBitmapX, mBitmapY, null);
-			}
+			canvas.drawPath(mPath, mPaint);
+			canvas.drawCircle(mCenterX, mCenterY, mRadius - 37, mPaint);
+
+			// //////
+
+			// final Camera camera = mCamera;
+			//
+			// Transformation t = new Transformation();
+			// final Matrix matrix = t.getMatrix();
+			//
+			// float mDepthZ = 180.0f;
+			// float interpolatedTime = 0.0f;
+			//
+			// // canvas.scale(-1f, 1f, super.getWidth() * 0.5f,
+			// // super.getHeight() * 0.5f);
+			// canvas.rotate(-mOrientation[0] + mHeading, mCenterX,
+			// mCenterY);
+			//
+			// camera.save();
+			// if (false) {
+			// camera.translate(0.0f, 0.0f, mDepthZ * interpolatedTime);
+			// } else {
+			// camera.translate(0.0f, 0.0f, mDepthZ
+			// * (1.0f - interpolatedTime));
+			// }
+			//
+			// // camera.rotateZ(-mOrientation[0]);
+			//
+			// float pitch = mOrientation[1];
+			// camera.rotateX(80);
+			// // camera.rotateZ(-20);
+			// camera.getMatrix(matrix);
+			//
+			// camera.applyToCanvas(canvas);
+			//
+			// canvas.drawPath(mPath, mPaint);
+			// canvas.drawCircle(mCenterX, mCenterY, mRadius - 37, mPaint);
+			//
+			// camera.restore();
+
+			// matrix.preTranslate(-mCenterX, -mCenterY);
+			// matrix.postTranslate(mCenterX, mCenterY);
 		}
 	}
 
@@ -72,11 +121,11 @@ public class RealityDirectionView extends SensorView implements
 				mRadius = (diameter / 2);
 
 				mPath = new Path();
-				mPath.moveTo(mCenterX, mCenterY - mRadius - 20);
+				mPath.moveTo(mCenterX, mCenterY - mRadius - 10);
 				mPath.lineTo(mCenterX - 15, mCenterY - mRadius);
 				mPath.lineTo(mCenterX + 15, mCenterY - mRadius);
 				// path.addArc(new RectF(140, 180, 180, 220), 180, 180);
-				mPath.lineTo(mCenterX, mCenterY - mRadius - 20);
+				mPath.lineTo(mCenterX, mCenterY - mRadius - 10);
 				mPath.close();
 
 				// mBitmapX = mCenterX - mRadius;
@@ -99,8 +148,8 @@ public class RealityDirectionView extends SensorView implements
 				//
 				// mCanvas.drawPath(path, mPaint);
 				// mCanvas.drawCircle(mRadius, mRadius, mRadius - 37, mPaint);
-				//
-				// mInitialized = true;
+
+				mInitialized = true;
 			}
 		}
 
@@ -137,23 +186,29 @@ public class RealityDirectionView extends SensorView implements
 		}
 	}
 
-	// public void unbindBitmaps() {
-	// synchronized (this) {
-	// /*
-	// * The bitmap will need to be recreated next time.
-	// */
-	// mInitialized = false;
-	//
-	// if (mBitmap != null) {
-	// mBitmap.recycle();
-	// }
-	//
-	// mBitmap = null;
-	// mCanvas = null;
-	// }
-	// }
+	public void unbindBitmaps() {
+		synchronized (this) {
+			/*
+			 * The bitmap will need to be recreated next time.
+			 */
+			mInitialized = false;
+
+			if (mBitmap != null) {
+				mBitmap.recycle();
+			}
+
+			mBitmap = null;
+			mCanvas = null;
+		}
+	}
 
 	public void onDirectionsChanged(DirectionEvent event) {
+		if (!mHasDirections) {
+			mHasDirections = true;
+
+			this.setWillNotDraw(false);
+		}
+
 		mHeading = event.bearing;
 
 		Log.d(TAG, "[HEAD] " + mHeading);

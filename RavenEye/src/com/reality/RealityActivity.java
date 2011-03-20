@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.hardware.Sensor;
@@ -15,9 +16,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
-import android.location.LocationProvider;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -34,7 +33,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class RealityActivity extends Activity implements SensorEventListener,
-		LocationListener {
+		DirectionObserver {
 
 	public static final String TAG = "RealityActivity";
 	public static final boolean USE_CAMERA = true;
@@ -55,9 +54,11 @@ public class RealityActivity extends Activity implements SensorEventListener,
 	private RealityDirectionView mDirectionView = null;
 	private TextView compassHeadingLabel;
 
-	private View mPlaceDescriptionView;
-	private TextView mTitleView;
-	private TextView mDescriptionView;
+	private TextView mStatusLabel;
+
+	// private View mPlaceDescriptionView;
+	// private TextView mTitleView;
+	// private TextView mDescriptionView;
 
 	private String[] headingNames = HeadingString.getHeadingNames();
 
@@ -65,6 +66,12 @@ public class RealityActivity extends Activity implements SensorEventListener,
 	private RealityOrientationListener mOrientationListener;
 
 	private ProgressDialog mLoadingDialog;
+
+	protected static final String PROXIMITY_ALERT = new String(
+			"android.intent.action.PROXIMITY_ALERT");
+	protected final IntentFilter proximitylocationIntentFilter = new IntentFilter(
+			PROXIMITY_ALERT);
+	protected final Intent proximitylocationIntent = new Intent(PROXIMITY_ALERT);
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +92,7 @@ public class RealityActivity extends Activity implements SensorEventListener,
 		mSurface = (RealityOverlayView) findViewById(R.id.surface);
 		compassHeadingLabel = (TextView) findViewById(R.id.compass_heading);
 		mCompassView = (RealitySmallCompassView) findViewById(R.id.compass);
+		mStatusLabel = (TextView) findViewById(R.id.status_output);
 
 		mSurface.registerForUpdates(mCompassView);
 
@@ -104,13 +112,12 @@ public class RealityActivity extends Activity implements SensorEventListener,
 		mOrientationListener.registerForUpdates(mSurface);
 		mOrientationListener.registerForUpdates(mCompassView);
 
-		mLocationListener.registerForStatusUpdates(this);
 		mLocationListener.registerForUpdates(mSurface);
 		// mLocationListener.registerForUpdates(mOrientationListener);
 
-		mPlaceDescriptionView = findViewById(R.id.place_description);
-		mTitleView = (TextView) findViewById(R.id.title);
-		mDescriptionView = (TextView) findViewById(R.id.description);
+		// mPlaceDescriptionView = findViewById(R.id.place_description);
+		// mTitleView = (TextView) findViewById(R.id.title);
+		// mDescriptionView = (TextView) findViewById(R.id.description);
 
 		// mStatusLabel.setText("Loading content...");
 		// mStatusLabel.setVisibility(View.VISIBLE);
@@ -289,7 +296,7 @@ public class RealityActivity extends Activity implements SensorEventListener,
 
 			Directions directions = new Directions(startWaypoint);
 
-			mDirectionManager = new DirectionManager();
+			mDirectionManager = new DirectionManager(mLocationManager);
 			mDirectionManager.setDirections(directions);
 
 			return startWaypoint;
@@ -304,11 +311,12 @@ public class RealityActivity extends Activity implements SensorEventListener,
 			}
 
 			mDirectionManager.registerObserver(mDirectionView);
+			mDirectionManager.registerObserver(RealityActivity.this);
 
 			mOrientationListener.registerForUpdates(mDirectionView);
 			mLocationListener.registerForUpdates(mDirectionManager);
 
-			mDirectionView.setWillNotDraw(false);
+			mDirectionManager.forceNotification();
 
 			mLoadingDialog.dismiss();
 			mLoadingDialog = null;
@@ -534,70 +542,34 @@ public class RealityActivity extends Activity implements SensorEventListener,
 	}
 
 	/*
-	 * LocationListener methods.
-	 */
-
-	public void onLocationChanged(Location location) {
-		// TODO Auto-generated method stub
-
-	}
-
-	public void onProviderDisabled(String provider) {
-		// TODO Auto-generated method stub
-
-	}
-
-	public void onProviderEnabled(String provider) {
-		// TODO Auto-generated method stub
-
-	}
-
-	public void onStatusChanged(String provider, int status, Bundle extras) {
-		String statusString;
-		switch (status) {
-		case LocationProvider.OUT_OF_SERVICE:
-			statusString = "Out of service";
-			break;
-		case LocationProvider.TEMPORARILY_UNAVAILABLE:
-			statusString = "Temporarily unavailable";
-			break;
-		case LocationProvider.AVAILABLE:
-			statusString = "Available";
-			break;
-		default:
-			statusString = "";
-		}
-
-		Toast.makeText(this,
-				statusString + " - Using " + extras.getInt("satellites")
-						+ " satellites", Toast.LENGTH_SHORT);
-	}
-
-	/*
 	 * MotionEvent methods.
 	 */
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		if (event.getAction() == MotionEvent.ACTION_DOWN) {
-			View view = mPlaceDescriptionView;
-
-			Place place = mSurface.getPlaceAt((int) event.getX(),
-					(int) event.getY());
-
-			boolean isPlace = place != null;
-
-			int visibility = isPlace ? View.VISIBLE : View.GONE;
-
-			if (isPlace) {
-				mTitleView.setText("Place");
-				mDescriptionView.setText("Description");
-			}
-
-			view.setVisibility(visibility);
+			// View view = mPlaceDescriptionView;
+			//
+			// Place place = mSurface.getPlaceAt((int) event.getX(),
+			// (int) event.getY());
+			//
+			// boolean isPlace = place != null;
+			//
+			// int visibility = isPlace ? View.VISIBLE : View.GONE;
+			//
+			// if (isPlace) {
+			// mTitleView.setText("Place");
+			// mDescriptionView.setText("Description");
+			// }
+			//
+			// view.setVisibility(visibility);
 		}
 
 		return true;
+	}
+
+	public void onDirectionsChanged(DirectionEvent event) {
+		mStatusLabel.setText("Distance remaining: " + event.distance);
 	}
 
 }

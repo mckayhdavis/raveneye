@@ -32,12 +32,12 @@ public class XmlWaypointHandler extends DefaultHandler {
 			String qName, Attributes attr) throws SAXException {
 		if (localName.equals("WayPoint")) {
 			String xString = attr.getValue("x");
-			String yString = attr.getValue("x");
+			String yString = attr.getValue("y");
 
-			int x = Integer.parseInt(xString);
-			int y = Integer.parseInt(yString);
+			long x = Long.parseLong(xString);
+			long y = Long.parseLong(yString);
 
-			Coordinate coordinate = new Coordinate(x, y);
+			Coordinate coordinate = new Coordinate((double) x / 1000000, (double) y / 1000000);
 
 			if (mWaypoint == null) {
 				mWaypoint = new Waypoint(coordinate);
