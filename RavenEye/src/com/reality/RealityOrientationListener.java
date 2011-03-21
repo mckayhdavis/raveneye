@@ -31,10 +31,10 @@ public class RealityOrientationListener implements SensorEventListener,
 	public static volatile float ALPHA = (float) 0.1;
 	public static volatile float BETA = 1 - ALPHA;
 
-	public static volatile float SLOW_ALPHA = (float) 0.001;
+	public static volatile float SLOW_ALPHA = (float) 0.005;
 	public static volatile float SLOW_BETA = 1 - SLOW_ALPHA;
 
-	public static final int DEAD_ZONE_MOVEMENT = 10;
+	public static final int DEAD_ZONE_MOVEMENT = 4; // in degrees
 
 	float[] mR = new float[16];
 	float[] mOutR = new float[16];
@@ -105,8 +105,8 @@ public class RealityOrientationListener implements SensorEventListener,
 
 			SensorManager.getOrientation(mOutR, values);
 
-			// filterValues(values); // filter sensor noise
-			lightFilterValues(values); // filter sensor noise
+			filterValues(values); // filter sensor noise
+			// lightFilterValues(values); // filter sensor noise
 
 			/*
 			 * Broadcast to the observers.
@@ -137,52 +137,30 @@ public class RealityOrientationListener implements SensorEventListener,
 		values[1] *= rad2deg; // pitch
 		values[2] *= rad2deg; // roll
 
-		float[] oldValues = mOldOrientation;
+		final float[] oldValues = mOldOrientation;
+		float difference;
 
-		// TODO: Not sure whether to account for declination like this. Google
-		// Maps seems to show direction without any declination correction.
-		//
-		// nOrient += mDeclination;
-		// if (nOrient < 0) {
-		// nOrient += 360;
-		// }
-
-		/*
-		 * Account for azimuth rotations around SOUTH. Azimuth values range is
-		 * (-180,180].
-		 * 
-		 * Only account for wrap-around at SOUTH. Don't use corrections at the
-		 * NORTH azimuth value (ie. around 0 degrees).
-		 */
-		if (Math.abs(values[0] - oldValues[0]) > 180) {
-			if (values[0] < 0) {
-				// Only the new azimuth is negative.
-				oldValues[0] -= 360;
-
-				// Optimized from:
-				// ---------------
-				// float val = values[0];
-				// float old = oldValues[0];
-				// oldValues[0] = val - (360 - (Math.abs(val) + old));
-				// oldValues[0] = val - (360 + (val - old));
-				// oldValues[0] = old - 360;
-			} else {
-				// Only the old azimuth is negative.
-				oldValues[0] += 360;
-
-				// Optimized from:
-				// ---------------
-				// float val = values[0];
-				// float old = oldValues[0];
-				// oldValues[0] = val + (360 - (val + Math.abs(old)));
-				// oldValues[0] = val + (360 + (old - val));
-				// oldValues[0] = old + 360;
-			}
-		}
-
-		// Scale the axis rotations.
 		for (int i = 0; i < 3; ++i) {
-			if (Math.abs(values[i] - oldValues[i]) < DEAD_ZONE_MOVEMENT) {
+			/*
+			 * Account for azimuth rotations around SOUTH. Azimuth values range
+			 * is (-180,180].
+			 * 
+			 * Only account for wrap-around at SOUTH. Don't use corrections at
+			 * the NORTH azimuth value (ie. around 0 degrees).
+			 */
+			difference = Math.abs(values[i] - oldValues[i]);
+			if (difference > 180) {
+				if (values[i] < 0) {
+					// Only the new azimuth is negative.
+					oldValues[i] -= 360;
+				} else {
+					// Only the old azimuth is negative.
+					oldValues[i] += 360;
+				}
+			}
+
+			// Scale the axis rotations.
+			if (difference < DEAD_ZONE_MOVEMENT) {
 				values[i] = (float) ((oldValues[i] * SLOW_BETA) + (values[i] * SLOW_ALPHA));
 			} else {
 				values[i] = (float) ((oldValues[i] * BETA) + (values[i] * ALPHA));
@@ -218,6 +196,9 @@ public class RealityOrientationListener implements SensorEventListener,
 			// bounds).
 			oldValues[0] = 0;
 		}
+
+		// Log.d(TAG, "(" + values[0] + "," + values[1] + "," + values[2] +
+		// ")");
 	}
 
 	/*

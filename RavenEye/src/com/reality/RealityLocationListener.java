@@ -4,6 +4,7 @@ import java.util.HashSet;
 
 import android.location.Location;
 import android.location.LocationListener;
+import android.location.LocationProvider;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -36,16 +37,22 @@ public class RealityLocationListener implements LocationListener {
 		mStatusObservers.remove(observer);
 	}
 
+	public boolean hasLocation() {
+		return mDeviceLocation != null;
+	}
+
 	/**
 	 * Returns the last known current location.
 	 * 
 	 * @return location
 	 */
-	public Location getCurrentLocation() {
+	public Location getLastKnownLocation() {
 		return mDeviceLocation;
 	}
 
 	public void onLocationChanged(Location location) {
+		mDeviceLocation = location;
+		
 		/*
 		 * Broadcast to the observers.
 		 */
@@ -71,6 +78,7 @@ public class RealityLocationListener implements LocationListener {
 	public void onStatusChanged(String provider, int status, Bundle extras) {
 		Log.d(TAG, "onStatusChanged() - Using " + extras.getInt("satellites")
 				+ " satellites");
+		
 		/*
 		 * Broadcast to the observers.
 		 */

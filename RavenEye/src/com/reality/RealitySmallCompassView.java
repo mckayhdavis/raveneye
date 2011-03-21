@@ -143,12 +143,10 @@ public class RealitySmallCompassView extends SensorView {
 
 	public void onSensorChanged(SensorEvent event) {
 		synchronized (this) {
-			final float[] values = event.values;
-
+			mOrientationValues = event.values;
+			
 			// Must copy over the values.
-			mOrientationValues[0] = values[0];
-			mOrientationValues[1] = values[1];
-			mOrientationValues[2] = values[2];
+			// System.arraycopy(event.values, 0, mOrientationValues, 0, 3);
 		}
 	}
 
@@ -226,8 +224,8 @@ public class RealitySmallCompassView extends SensorView {
 					}
 
 					synchronized (this) {
-						mCanvas.drawCircle((int) x + PLACE_RADIUS, (int) y + PLACE_RADIUS, PLACE_RADIUS,
-								paint);
+						mCanvas.drawCircle((int) x + PLACE_RADIUS, (int) y
+								+ PLACE_RADIUS, PLACE_RADIUS, paint);
 					}
 				}
 			}
