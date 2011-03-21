@@ -116,7 +116,7 @@ public class Place implements Comparable<Place>, Serializable {
 		if (distance < 1000) {
 			units = (int) distance + "m";
 		} else {
-			units = ((int) (distance / 100) / 10) + "km";
+			units = ((float) ((int) (distance / 100)) / 10) + "km";
 		}
 
 		synchronized (this) {

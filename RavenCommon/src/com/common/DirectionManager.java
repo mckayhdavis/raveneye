@@ -3,7 +3,6 @@ package com.common;
 import java.util.ArrayList;
 import java.util.List;
 
-import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -11,8 +10,8 @@ import android.os.Bundle;
 
 public class DirectionManager implements LocationListener {
 
-	public static final String TAG = "Directions";
-	
+	public static final String TAG = "RealityActivity";
+
 	public static int PROXIMITY_RADIUS = 5;
 
 	private List<DirectionObserver> mObservers = new ArrayList<DirectionObserver>(
@@ -29,17 +28,14 @@ public class DirectionManager implements LocationListener {
 
 	public void setDirections(Directions directions) {
 		mDirections = directions;
+		
+		Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+		
+		onLocationChanged(location);
 	}
 
 	public void registerObserver(DirectionObserver observer) {
 		mObservers.add(observer);
-	}
-
-	public void forceNotification() {
-		// Notify the observers.
-		DirectionEvent event = new DirectionEvent(
-				DirectionEvent.STATUS_INITIALIZING, 0, 0);
-		notifyObservers(event);
 	}
 
 	private void notifyObservers(DirectionEvent event) {
@@ -58,10 +54,10 @@ public class DirectionManager implements LocationListener {
 		}
 
 		Waypoint curWaypoint = mDirections.currentWaypoint();
-		if(curWaypoint == null) {
+		if (curWaypoint == null) {
 			return;
 		}
-		
+
 		Coordinate coord = curWaypoint.coordinate;
 		mWaypointLocation.setLatitude(coord.latitude);
 		mWaypointLocation.setLongitude(coord.longitude);

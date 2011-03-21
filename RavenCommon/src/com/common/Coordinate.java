@@ -29,6 +29,15 @@ public class Coordinate implements Serializable {
 		this.longitude = longitude;
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof Coordinate) {
+			Coordinate coord = (Coordinate) o;
+			return coord.latitude == latitude && coord.longitude == longitude;
+		}
+		return false;
+	}
+
 	public String toString() {
 		return "(" + latitude + "," + longitude + ")";
 	}
