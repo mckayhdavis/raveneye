@@ -4,6 +4,16 @@
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">
+    <SeekBar
+        android:id="@+id/distance_bar"
+        android:max="20"
+        android:progress="5"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"></SeekBar>
+    <SeekBar
+        android:id="@+id/time_bar"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"></SeekBar>
     <TextView
         android:layout_width="fill_parent"
         android:id="@+id/counter"

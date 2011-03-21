@@ -18,6 +18,8 @@ import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.common.Coordinate;
+
 public class LocationGathererService extends Service implements
 		LocationListener {
 
@@ -165,7 +167,7 @@ public class LocationGathererService extends Service implements
 		mLocationBroadcast.putExtra(Coordinate.class.toString(), coord);
 		mLocationBroadcast.putExtra("count", ++mLocationUpdateCount);
 
-		mLocationExporter.write(coord);
+		mLocationExporter.add(coord);
 
 		this.sendBroadcast(mLocationBroadcast);
 	}

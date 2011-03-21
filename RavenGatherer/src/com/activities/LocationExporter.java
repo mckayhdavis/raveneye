@@ -11,6 +11,8 @@ import android.os.Environment;
 import android.util.Log;
 import android.util.Xml;
 
+import com.common.Coordinate;
+
 public class LocationExporter {
 
 	public static final String TAG = LocationGathererService.TAG;
@@ -78,11 +80,11 @@ public class LocationExporter {
 		}
 	}
 
-	public void write(Coordinate coord) {
+	public void add(Coordinate coord) {
 		try {
 			mSerializer.startTag(null, "WayPoint");
-			mSerializer.attribute(null, "x", coord.x + "");
-			mSerializer.attribute(null, "y", coord.y + "");
+			mSerializer.attribute(null, "x", coord.latitude + "");
+			mSerializer.attribute(null, "y", coord.longitude + "");
 			// mSerializer.text("some text inside WayPoint");
 			mSerializer.endTag(null, "WayPoint");
 
