@@ -1,22 +1,49 @@
 package com.common;
 
-public class Waypoint {
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
-	public final Coordinate coordinate;
+public abstract class Waypoint implements Serializable {
 
-	private Waypoint mNext;
-	private Place mPlace;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 
-	public Waypoint(Coordinate coordinate) {
-		this.coordinate = coordinate;
+	// Usually a way-point has at most 4 neighbors.
+	private List<Waypoint> mNeighbours = new ArrayList<Waypoint>(4);
+	private Place mPlace = null;
+
+	private boolean mVisited = false;
+
+	public int numberOfChildren() {
+		return mNeighbours.size();
+	}
+
+	public Waypoint next(int index) {
+		return mNeighbours.get(index);
 	}
 
 	public Waypoint next() {
-		return mNext;
+		if (mNeighbours.size() > 0) {
+			return mNeighbours.get(0);
+		}
+		return null;
 	}
 
-	public void setNext(Waypoint waypoint) {
-		mNext = waypoint;
+	public void addNext(Waypoint waypoint) {
+		mNeighbours.add(waypoint);
+
+		waypoint.mNeighbours.add(this);
+	}
+
+	public boolean isVisited() {
+		return mVisited;
+	}
+
+	public void visit() {
+		mVisited = true;
 	}
 
 	/**
@@ -35,10 +62,6 @@ public class Waypoint {
 	 */
 	public Place getPlace() {
 		return mPlace;
-	}
-
-	public String toString() {
-		return "[" + mPlace + "] - " + coordinate.toString();
 	}
 
 }

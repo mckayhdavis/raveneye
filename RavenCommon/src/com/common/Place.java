@@ -14,14 +14,10 @@ public class Place implements Comparable<Place>, Serializable {
 	public final String buildingCode;
 	public final Coordinate coordinate;
 
+	public float distance = -1;
 	public transient float bearing = -1;
-	public transient float distance = -1;
-
-	private String mLastKnownDistanceString = "";
-	private float mLastKnownDistance = -1;
-
 	private transient Drawable mImageResource = null;
-	private int mImageResourceId = -1;
+	private transient int mImageResourceId = -1;
 
 	private ArrayList<Review> mReviews = null;
 
@@ -91,12 +87,16 @@ public class Place implements Comparable<Place>, Serializable {
 		return mImageResourceId;
 	}
 
-	public String getLastKnownDistanceString() {
-		return mLastKnownDistanceString;
-	}
-
-	public float getLastKnownDistance() {
-		return mLastKnownDistance;
+	public static String getDistanceString(float distance) {
+		String units;
+		if (distance < 1000) {
+			units = (int) distance + "m";
+		} else {
+			distance = (int) (distance / 100);
+			distance = distance / 10;
+			units = distance + "km";
+		}
+		return units;
 	}
 
 	public void updateWithLocation(Location location) {
@@ -109,20 +109,7 @@ public class Place implements Comparable<Place>, Serializable {
 				location.getLongitude(), coordinate.latitude,
 				coordinate.longitude, actualDistance);
 
-		String units;
-
-		float distance = Math.round(actualDistance[0]);
-
-		if (distance < 1000) {
-			units = (int) distance + "m";
-		} else {
-			units = ((float) ((int) (distance / 100)) / 10) + "km";
-		}
-
-		synchronized (this) {
-			mLastKnownDistance = distance;
-			mLastKnownDistanceString = units;
-		}
+		distance = (float) ((int) (actualDistance[0] * 10)) / 10;
 	}
 
 	@Override
@@ -141,16 +128,15 @@ public class Place implements Comparable<Place>, Serializable {
 	}
 
 	public int compareTo(Place place) {
-		boolean hasDistance = mLastKnownDistance >= 0;
-		boolean otherHasDistance = place.mLastKnownDistance >= 0;
+		boolean hasDistance = distance >= 0;
+		boolean otherHasDistance = place.distance >= 0;
 		if (!hasDistance) {
 			if (otherHasDistance) {
 				return 1;
 			}
-		} else if (!otherHasDistance
-				|| mLastKnownDistance < place.mLastKnownDistance) {
+		} else if (!otherHasDistance || distance < place.distance) {
 			return -1;
-		} else if (mLastKnownDistance > place.mLastKnownDistance) {
+		} else if (distance > place.distance) {
 			return 1;
 		}
 
