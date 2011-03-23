@@ -12,6 +12,12 @@
         android:icon="@drawable/icon"
         android:label="@string/app_name"
         android:debuggable="true">
+        <uses-library android:name="com.google.android.maps" />
+        <activity
+            android:name="com.activities.WaypointMapActivity"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait">
+        </activity>
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"

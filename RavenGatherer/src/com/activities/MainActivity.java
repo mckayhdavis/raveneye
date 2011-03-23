@@ -12,14 +12,30 @@ import android.os.IBinder;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.common.Coordinate;
+import com.common.IntersectionWaypoint;
+import com.common.LocationExporter;
+import com.common.LocationWaypoint;
+import com.common.ObjectLocationExporter;
+import com.common.Place;
 
 public class MainActivity extends Activity {
 
 	private boolean mIsBound = false;
 
 	private TextView mCounter;
+	private TextView mWaypointCounter;
+	private EditText mIntersectionName;
+	private EditText mPlaceName;
+
+	// TODO: Should not really have this in an activity... should be in the
+	// service.
+	private LocationExporter mLocationExporter;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -28,6 +44,11 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.main);
 
 		mCounter = (TextView) findViewById(R.id.counter);
+		mWaypointCounter = (TextView) findViewById(R.id.waypoint_counter);
+		mIntersectionName = (EditText) findViewById(R.id.intersection_name);
+		mPlaceName = (EditText) findViewById(R.id.place_name);
+
+		mLocationExporter = new ObjectLocationExporter();
 
 		doBindService();
 	}
@@ -47,7 +68,7 @@ public class MainActivity extends Activity {
 			// cast its IBinder to a concrete class and directly access it.
 			mBoundService = ((LocationGathererService.LocalBinder) service)
 					.getService();
-			
+
 			mCounter.setText(mBoundService.getCount() + "");
 
 			// Tell the user about this for our demo.
@@ -151,17 +172,62 @@ public class MainActivity extends Activity {
 			if (action != null) {
 				if (action.equals(LocationGathererService.BROADCAST_LOCATION)) {
 					int count = intent.getIntExtra("count", 0);
-					// int id = intent.getIntExtra("id", -1);
 
-					// Alarm alarm = (Alarm) intent
-					// .getSerializableExtra(AlarmItem.class.toString());
-
-					if (mCounter != null) {
-						mCounter.setText(count + "");
-					}
+					mCounter.setText(count + "");
 				}
 			}
 		}
 	};
+
+	private String addWaypoint(LocationWaypoint waypoint) {
+		String key = mIntersectionName.getText().toString();
+		if (key != null && !key.equals("")) {
+			if (mLocationExporter.setCurrentWaypoint(key)) {
+				Toast.makeText(this, "Current waypoint: " + key,
+						Toast.LENGTH_LONG);
+			} else {
+				Toast.makeText(this, "Key not found: " + key, Toast.LENGTH_LONG);
+			}
+		}
+
+		return mLocationExporter.add(waypoint);
+	}
+
+	public void addPlaceClick(View view) {
+		Coordinate coord = mBoundService.getLatestCoordinate();
+		mWaypointCounter.setText(mLocationExporter.size() + "");
+
+		Place place = new Place(mPlaceName.getText().toString(), "", "", coord);
+		LocationWaypoint waypoint = new LocationWaypoint(coord);
+		waypoint.setPlace(place);
+
+		addWaypoint(waypoint);
+	}
+
+	public void addWaypointClick(View view) {
+		Coordinate coord = mBoundService.getLatestCoordinate();
+		mWaypointCounter.setText(mLocationExporter.size() + "");
+
+		LocationWaypoint waypoint = new LocationWaypoint(coord);
+
+		addWaypoint(waypoint);
+	}
+
+	public void addIntersectionClick(View view) {
+		Coordinate coord = mBoundService.getLatestCoordinate();
+		mWaypointCounter.setText(mLocationExporter.size() + "");
+
+		LocationWaypoint waypoint = new IntersectionWaypoint(coord);
+
+		String key = addWaypoint(waypoint);
+
+		Toast.makeText(this, "Intersection waypoint key: " + key,
+				Toast.LENGTH_LONG);
+	}
+
+	public void viewMapClick(View view) {
+		Intent intent = new Intent(this, WaypointMapActivity.class);
+		this.startActivity(intent);
+	}
 
 }

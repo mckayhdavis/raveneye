@@ -27,7 +27,6 @@ public class LocationGathererService extends Service implements
 
 	private NotificationManager mNM;
 	private LocationManager mLocationManager;
-	private LocationExporter mLocationExporter;
 
 	private int mLocationUpdateCount = 0;
 
@@ -39,8 +38,10 @@ public class LocationGathererService extends Service implements
 	// We use it on Notification start, and to cancel it.
 	private int NOTIFICATION = R.string.local_service_started;
 
-	public static final int MIN_TIME_BETWEEN_LOCATION_UPDATES = 2000;
-	public static final int MIN_DISTANCE_BETWEEN_LOCATION_UPDATES = 8;
+	public static final int MIN_TIME_BETWEEN_LOCATION_UPDATES = 500;
+	public static final int MIN_DISTANCE_BETWEEN_LOCATION_UPDATES = 0;
+
+	private Coordinate mCurrentCoordinate;
 
 	/**
 	 * Class for clients to access. Because we know this service always runs in
@@ -60,7 +61,6 @@ public class LocationGathererService extends Service implements
 		// status bar.
 		showNotification();
 
-		mLocationExporter = new LocationExporter();
 		mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
 		/*
@@ -109,8 +109,6 @@ public class LocationGathererService extends Service implements
 		Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT)
 				.show();
 
-		mLocationExporter.end();
-
 		/*
 		 * Remove the update listeners of the compass and GPS.
 		 */
@@ -127,6 +125,10 @@ public class LocationGathererService extends Service implements
 	// This is the object that receives interactions from clients. See
 	// RemoteService for a more complete example.
 	private final IBinder mBinder = new LocalBinder();
+
+	public Coordinate getLatestCoordinate() {
+		return mCurrentCoordinate;
+	}
 
 	/**
 	 * Show a notification while this service is running.
@@ -164,10 +166,12 @@ public class LocationGathererService extends Service implements
 		Coordinate coord = new Coordinate(location.getLatitude(),
 				location.getLongitude());
 
+		synchronized (this) {
+			mCurrentCoordinate = coord;
+		}
+
 		mLocationBroadcast.putExtra(Coordinate.class.toString(), coord);
 		mLocationBroadcast.putExtra("count", ++mLocationUpdateCount);
-
-		mLocationExporter.add(coord);
 
 		this.sendBroadcast(mLocationBroadcast);
 	}
