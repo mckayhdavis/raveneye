@@ -14,15 +14,15 @@ public final class R {
         public static final int icon=0x7f020000;
     }
     public static final class id {
-        public static final int button_addintersection=0x7f060006;
-        public static final int button_addplace=0x7f060004;
-        public static final int button_addwaypoint=0x7f060005;
-        public static final int button_map=0x7f060007;
+        public static final int button_addintersection=0x7f060007;
+        public static final int button_addplace=0x7f060005;
+        public static final int button_addwaypoint=0x7f060006;
         public static final int counter=0x7f060000;
         public static final int exit=0x7f060009;
-        public static final int intersection_name=0x7f060002;
+        public static final int file_name=0x7f060002;
+        public static final int intersection_name=0x7f060003;
         public static final int mapview=0x7f060008;
-        public static final int place_name=0x7f060003;
+        public static final int place_name=0x7f060004;
         public static final int waypoint_counter=0x7f060001;
     }
     public static final class layout {

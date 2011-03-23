@@ -1,5 +1,7 @@
 package com.activities;
 
+import java.io.IOException;
+
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -30,6 +32,7 @@ public class MainActivity extends Activity {
 
 	private TextView mCounter;
 	private TextView mWaypointCounter;
+	private EditText mFileName;
 	private EditText mIntersectionName;
 	private EditText mPlaceName;
 
@@ -45,6 +48,7 @@ public class MainActivity extends Activity {
 
 		mCounter = (TextView) findViewById(R.id.counter);
 		mWaypointCounter = (TextView) findViewById(R.id.waypoint_counter);
+		mFileName = (EditText) findViewById(R.id.file_name);
 		mIntersectionName = (EditText) findViewById(R.id.intersection_name);
 		mPlaceName = (EditText) findViewById(R.id.place_name);
 
@@ -148,13 +152,26 @@ public class MainActivity extends Activity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.exit:
-			this.finish();
+			String filename = mFileName.getText().toString();
+			if (!filename.equals("")) {
+				try {
+					mLocationExporter.writeToFile(filename);
 
-			// There should be no bound clients anymore, but we need to call
-			// stopService since the service was created with
-			// startService.
-			stopService(new Intent(this, LocationGathererService.class));
+					this.finish();
 
+					// There should be no bound clients anymore, but we need to
+					// call
+					// stopService since the service was created with
+					// startService.
+					stopService(new Intent(this, LocationGathererService.class));
+				} catch (IOException e) {
+					Toast.makeText(this, "Error occured saving to file",
+							Toast.LENGTH_LONG);
+				}
+			} else {
+				Toast.makeText(this, "Please enter file name.",
+						Toast.LENGTH_LONG);
+			}
 			break;
 		default:
 			return false;
@@ -190,12 +207,15 @@ public class MainActivity extends Activity {
 			}
 		}
 
-		return mLocationExporter.add(waypoint);
+		key = mLocationExporter.add(waypoint);
+
+		mWaypointCounter.setText(mLocationExporter.size() + "");
+
+		return key;
 	}
 
 	public void addPlaceClick(View view) {
 		Coordinate coord = mBoundService.getLatestCoordinate();
-		mWaypointCounter.setText(mLocationExporter.size() + "");
 
 		Place place = new Place(mPlaceName.getText().toString(), "", "", coord);
 		LocationWaypoint waypoint = new LocationWaypoint(coord);
@@ -206,7 +226,6 @@ public class MainActivity extends Activity {
 
 	public void addWaypointClick(View view) {
 		Coordinate coord = mBoundService.getLatestCoordinate();
-		mWaypointCounter.setText(mLocationExporter.size() + "");
 
 		LocationWaypoint waypoint = new LocationWaypoint(coord);
 
@@ -215,7 +234,6 @@ public class MainActivity extends Activity {
 
 	public void addIntersectionClick(View view) {
 		Coordinate coord = mBoundService.getLatestCoordinate();
-		mWaypointCounter.setText(mLocationExporter.size() + "");
 
 		LocationWaypoint waypoint = new IntersectionWaypoint(coord);
 

@@ -28,42 +28,49 @@
         android:layout_alignParentBottom="true">
         <EditText
             android:layout_width="fill_parent"
+            android:id="@+id/file_name"
+            android:layout_height="wrap_content"
+            android:text="raven-graph"
+            android:hint="File name" />
+        <EditText
+            android:layout_width="fill_parent"
             android:id="@+id/intersection_name"
             android:layout_height="wrap_content"
-            android:hint="Place name" />
+            android:layout_below="@+id/file_name"
+            android:hint="Intersection name" />
         <EditText
             android:layout_width="fill_parent"
             android:id="@+id/place_name"
             android:layout_height="wrap_content"
             android:layout_below="@+id/intersection_name"
             android:hint="Place name" />
-        <Button
+        <LinearLayout
             android:layout_width="fill_parent"
-            android:id="@+id/button_addplace"
             android:layout_height="wrap_content"
             android:layout_below="@+id/place_name"
-            android:text="Add place"
-            android:onClick="addPlaceClick" />
-        <Button
-            android:layout_width="fill_parent"
-            android:id="@+id/button_addwaypoint"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/button_addplace"
-            android:text="Add waypoint"
-            android:onClick="addWaypointClick" />
-        <Button
-            android:layout_width="fill_parent"
-            android:id="@+id/button_addintersection"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/button_addwaypoint"
-            android:text="Add intersection"
-            android:onClick="addIntersectionClick" />
-        <Button
-            android:layout_width="fill_parent"
-            android:id="@+id/button_map"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/button_addintersection"
-            android:text="View map"
-            android:onClick="viewMapClick" />
+            android:orientation="horizontal"
+            android:weightSum="3">
+            <Button
+                android:layout_width="wrap_content"
+                android:id="@+id/button_addplace"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Add place"
+                android:onClick="addPlaceClick" />
+            <Button
+                android:layout_width="wrap_content"
+                android:id="@+id/button_addwaypoint"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Add waypoint"
+                android:onClick="addWaypointClick" />
+            <Button
+                android:layout_width="wrap_content"
+                android:id="@+id/button_addintersection"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Add intersection"
+                android:onClick="addIntersectionClick" />
+        </LinearLayout>
     </RelativeLayout>
 </RelativeLayout>
