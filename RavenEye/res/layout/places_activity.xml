@@ -33,16 +33,17 @@
             android:id="@+id/viewmap_btn"
             android:layout_toRightOf="@+id/viewreality_btn"
             android:onClick="onViewMapClick" />
-        <ImageButton
-            android:layout_width="wrap_content"
-            android:layout_height="50dip"
-            android:layout_weight="0.33"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_menu_add"
-            android:layout_below="@+id/hr"
-            android:id="@+id/add_favourite_btn"
-            android:layout_toRightOf="@+id/directions_btn"
-            android:onClick="onAddToFavouritesClick" />
+    <!-- <ImageButton -->
+    <!-- android:layout_width="wrap_content" -->
+    <!-- android:layout_height="50dip" -->
+    <!-- android:layout_weight="0.33" -->
+    <!-- android:scaleType="fitCenter" -->
+    <!-- android:src="@drawable/ic_menu_add" -->
+    <!-- android:layout_below="@+id/hr" -->
+    <!-- android:id="@+id/add_favourite_btn" -->
+    <!-- android:layout_toRightOf="@+id/directions_btn" -->
+    <!-- android:onClick="onAddToFavouritesClick" -->
+    <!-- android:enabled="false" /> -->
     </LinearLayout>
     <ScrollView
         android:layout_height="fill_parent"
@@ -77,7 +78,12 @@
                 android:textSize="24dip"
                 android:textColor="#ffffff"
                 android:textStyle="bold"
-                android:text="Name" android:layout_width="fill_parent" android:gravity="center_horizontal" android:shadowColor="#ffcc9900" android:shadowRadius="10" android:shadowDy="5"/>
+                android:text="Name"
+                android:layout_width="fill_parent"
+                android:gravity="center_horizontal"
+                android:shadowColor="#ffcc9900"
+                android:shadowRadius="10"
+                android:shadowDy="5" />
             <RelativeLayout
                 android:id="@+id/hr"
                 android:layout_width="fill_parent"
@@ -87,7 +93,9 @@
                 android:paddingTop="4dip"
                 android:paddingBottom="4dip"
                 android:orientation="horizontal"
-                android:background="#33DDDDDD" android:layout_marginLeft="5dip" android:layout_marginRight="5dip"/>
+                android:background="#33DDDDDD"
+                android:layout_marginLeft="5dip"
+                android:layout_marginRight="5dip" />
             <RelativeLayout
                 android:id="@+id/title_panel"
                 android:layout_width="fill_parent"
@@ -102,7 +110,8 @@
                     android:src="@drawable/icon"
                     android:id="@+id/picture"
                     android:onClick="onPictureClick"
-                    android:layout_margin="4dip" android:scaleType="centerCrop"/>
+                    android:layout_margin="4dip"
+                    android:scaleType="centerCrop" />
             </RelativeLayout>
             <TextView
                 android:id="@+id/building_code_label"
@@ -121,18 +130,18 @@
                 android:layout_height="wrap_content"
                 android:textSize="16sp" />
             <TextView
-                android:id="@+id/direction_label"
+                android:id="@+id/distance_label"
                 android:layout_width="wrap_content"
                 android:layout_below="@+id/building_code"
                 android:layout_height="wrap_content"
                 android:paddingRight="10dip"
-                android:text="Distance:"
+                android:text="Distance"
                 android:textSize="16sp"
                 android:textStyle="bold" />
             <TextView
-                android:id="@+id/direction"
+                android:id="@+id/distance"
                 android:layout_width="wrap_content"
-                android:layout_toRightOf="@+id/direction_label"
+                android:layout_toRightOf="@+id/distance_label"
                 android:layout_below="@+id/building_code"
                 android:layout_height="wrap_content"
                 android:textSize="16sp"
@@ -140,7 +149,7 @@
             <TextView
                 android:id="@+id/description_label"
                 android:layout_width="wrap_content"
-                android:layout_below="@+id/direction"
+                android:layout_below="@+id/distance"
                 android:layout_height="wrap_content"
                 android:paddingRight="10dip"
                 android:text="Description:"
@@ -186,7 +195,10 @@
                 android:paddingBottom="2dip"
                 android:numStars="5"
                 android:stepSize="1.0"
-                style="?android:attr/ratingBarStyleSmall" android:onClick="onRateClick" android:clickable="true" android:rating="5"/>
+                style="?android:attr/ratingBarStyleSmall"
+                android:onClick="onRateClick"
+                android:clickable="true"
+                android:rating="5" />
             <TextView
                 android:id="@+id/reviews_label"
                 android:layout_width="wrap_content"

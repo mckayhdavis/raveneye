@@ -8,30 +8,59 @@
     android:layout_gravity="bottom"
     android:visibility="gone">
     <TextView
-        android:text="Details"
+        android:text="Title"
         android:id="@+id/title"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:background="#CC000000"
-        android:textColor="#FFFFFFFF"
+        android:background="#ff333333"
+        android:textColor="#ffffffff"
         android:textSize="16sp"
         android:textStyle="bold"
         android:gravity="left"
         android:paddingLeft="7dip"
         android:paddingTop="3dip"
         android:paddingRight="7dip"
-        android:paddingBottom="3dip" />
-    <TextView
-        android:text="Description"
-        android:id="@+id/description"
+        android:paddingBottom="3dip"
+        android:onClick="onPlaceClick" />
+    <RelativeLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/details_frame"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_below="@+id/title"
-        android:minHeight="50dip"
-        android:paddingLeft="7dip"
-        android:paddingTop="3dip"
-        android:paddingRight="7dip"
-        android:paddingBottom="3dip"
-        android:background="#CCFF0000"
-        android:textColor="#FFFFFFFF" />
+        android:padding="5dip"
+        android:background="#ffeeeeee">
+        <ImageButton
+            android:id="@+id/navigate_button"
+            android:text="Navigate"
+            android:src="@drawable/ic_menu_directions"
+            android:layout_width="wrap_content"
+            android:layout_height="50dip"
+            android:layout_centerVertical="true"
+            android:scaleType="fitCenter"
+            android:onClick="onNavigateToPlaceClick" />
+        <ImageButton
+            android:id="@+id/more_button"
+            android:text="More..."
+            android:src="@drawable/ic_menu_info_details"
+            android:layout_width="wrap_content"
+            android:layout_height="50dip"
+            android:layout_toRightOf="@+id/navigate_button"
+            android:layout_centerVertical="true"
+            android:scaleType="fitCenter"
+            android:onClick="onPlaceInfoClick" />
+        <TextView
+            android:id="@+id/description"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/more_button"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="7dip"
+            android:layout_marginRight="7dip"
+            android:layout_alignParentRight="true"
+            android:gravity="right"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#ff000000" />
+    </RelativeLayout>
 </RelativeLayout>

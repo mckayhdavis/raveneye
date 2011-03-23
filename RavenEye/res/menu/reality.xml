@@ -3,11 +3,12 @@
     <item
         android:title="Start Navigation"
         android:id="@+id/navigate"
+        android:visible="true"
         android:icon="@drawable/ic_menu_directions"></item>
     <item
         android:title="Places Directory"
         android:id="@+id/directory"
-        android:icon="@drawable/ic_menu_view"></item>
+        android:icon="@drawable/ic_menu_small_tiles"></item>
     <item
         android:title="View Map"
         android:id="@+id/map"
