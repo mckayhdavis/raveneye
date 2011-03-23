@@ -48,9 +48,9 @@ import com.common.DirectionObserver;
 import com.common.Directions;
 import com.common.LocationDirectionManager;
 import com.common.LocationWaypoint;
-import com.common.ObjectLocationImporter;
 import com.common.Place;
 import com.common.Waypoint;
+import com.common.XmlLocationImporter;
 
 public class RealityActivity extends Activity implements LocationListener,
 		DirectionObserver {
@@ -740,7 +740,7 @@ public class RealityActivity extends Activity implements LocationListener,
 			if (placeWaypoint[0] == null) {
 				// Download the way-points.
 				try {
-					startWaypoint = new ObjectLocationImporter()
+					startWaypoint = new XmlLocationImporter()
 							.readFromFile(DIRECTIONS_FILE_NAME);
 
 					getDirections((LocationWaypoint) startWaypoint);
