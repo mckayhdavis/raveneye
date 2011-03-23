@@ -18,7 +18,6 @@ public class ObjectLocationImporter implements LocationImporter {
 
 	}
 
-	@Override
 	public LocationWaypoint readFromFile(String fileName) throws IOException {
 		LocationWaypoint waypoint = null;
 

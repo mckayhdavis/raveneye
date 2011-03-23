@@ -27,7 +27,6 @@ public class ObjectLocationExporter implements LocationExporter {
 
 	}
 
-	@Override
 	public boolean setCurrentWaypoint(String key) {
 		IntersectionWaypoint waypoint = mIntersectionWaypoints.get(key);
 		if (waypoint != null) {
@@ -37,7 +36,6 @@ public class ObjectLocationExporter implements LocationExporter {
 		return false;
 	}
 
-	@Override
 	public String add(LocationWaypoint waypoint) {
 		if (mGraph == null) {
 			mGraph = waypoint;
@@ -60,7 +58,6 @@ public class ObjectLocationExporter implements LocationExporter {
 		return key;
 	}
 
-	@Override
 	public IntersectionWaypoint getIntersectionWaypoint(String key) {
 		return mIntersectionWaypoints.get(key);
 	}
@@ -69,7 +66,6 @@ public class ObjectLocationExporter implements LocationExporter {
 		return KEY_PREFIX + mIntersectionWaypoints.size() + "";
 	}
 
-	@Override
 	public void writeToFile(String fileName) throws IOException {
 		// create a new file called "new.xml" in the SD card
 		File file = new File(Environment.getExternalStorageDirectory() + "/"
@@ -98,7 +94,6 @@ public class ObjectLocationExporter implements LocationExporter {
 		Log.d(TAG, "saved graph to file: " + fileName + FILE_EXTENSION);
 	}
 
-	@Override
 	public int size() {
 		return mSize;
 	}

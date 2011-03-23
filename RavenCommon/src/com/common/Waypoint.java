@@ -35,7 +35,7 @@ public abstract class Waypoint implements Serializable {
 	public void addNext(Waypoint waypoint) {
 		mNeighbours.add(waypoint);
 
-		waypoint.mNeighbours.add(this);
+		// waypoint.mNeighbours.add(this);
 	}
 
 	public boolean isVisited() {

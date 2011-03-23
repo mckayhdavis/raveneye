@@ -8,24 +8,23 @@ import android.os.Bundle;
 public class LocationDirectionManager extends
 		DirectionManager<LocationWaypoint> implements LocationListener {
 
-	public static int PROXIMITY_RADIUS = 10;
+	/*
+	 * The accuracy of the Location object is used to determine whether we are
+	 * in proximity to a way-point. TODO: until further testing, we use a buffer
+	 * as well to ensure navigation between way-points is as seamless as
+	 * possible.
+	 */
+	public static int PROXIMITY_BUFFER = 5;
 
 	private Location mWaypointLocation = null;
 
-	private LocationManager mLocationManager;
+	public LocationDirectionManager() {
 
-	public LocationDirectionManager(LocationManager manager) {
-		mLocationManager = manager;
 	}
 
 	@Override
 	public void setDirections(Directions<LocationWaypoint> directions) {
 		super.setDirections(directions);
-
-		Location location = mLocationManager
-				.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-
-		onLocationChanged(location);
 	}
 
 	/*
@@ -37,30 +36,44 @@ public class LocationDirectionManager extends
 			mWaypointLocation = new Location(location);
 		}
 
-		LocationWaypoint curWaypoint = mDirections.currentWaypoint();
-		if (curWaypoint == null) {
-			return;
+		/*
+		 * This will usually only have one iteration. We loop again just in-case
+		 * we happen to skip-over two or more nearby way-points.
+		 */
+		for (;;) {
+			LocationWaypoint curWaypoint = mDirections.currentWaypoint();
+			if (curWaypoint == null) {
+				return;
+			}
+
+			Coordinate coord = (Coordinate) curWaypoint.getData();
+			mWaypointLocation.setLatitude(coord.latitude);
+			mWaypointLocation.setLongitude(coord.longitude);
+
+			int bearing = (int) location.bearingTo(mWaypointLocation);
+			int distance = (int) location.distanceTo(mWaypointLocation);
+
+			if (bearing < 0) {
+				bearing += 360;
+			}
+
+			if (distance < (location.getAccuracy())) { // + PROXIMITY_BUFFER
+				if (mDirections.nextWaypoint() == null) {
+					// We are at the destination. Broadcast the event.
+					DirectionEvent event = new DirectionEvent(
+							DirectionEvent.STATUS_ARRIVED, bearing, distance);
+					notifyObservers(event);
+					return;
+				}
+			} else {
+				// Notify the observers.
+				DirectionEvent event = new DirectionEvent(
+						DirectionEvent.STATUS_ONCOURSE, bearing, distance);
+				notifyObservers(event);
+
+				return;
+			}
 		}
-
-		Coordinate coord = (Coordinate) curWaypoint.getData();
-		mWaypointLocation.setLatitude(coord.latitude);
-		mWaypointLocation.setLongitude(coord.longitude);
-
-		int bearing = (int) location.bearingTo(mWaypointLocation);
-		int distance = (int) location.distanceTo(mWaypointLocation);
-
-		if (bearing < 0) {
-			bearing += 360;
-		}
-
-		if (distance < PROXIMITY_RADIUS) {
-			mDirections.nextWaypoint();
-		}
-
-		// Notify the observers.
-		DirectionEvent event = new DirectionEvent(
-				DirectionEvent.STATUS_ONCOURSE, bearing, distance);
-		notifyObservers(event);
 	}
 
 	public void onProviderDisabled(String provider) {
