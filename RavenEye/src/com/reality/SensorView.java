@@ -11,7 +11,7 @@ import android.os.Bundle;
 import android.util.AttributeSet;
 import android.view.View;
 
-import com.common.Place;
+import com.common.PlaceOverlayWrapper;
 
 public abstract class SensorView extends View implements SensorEventListener,
 		LocationListener {
@@ -42,7 +42,7 @@ public abstract class SensorView extends View implements SensorEventListener,
 		this.mLocation = location;
 	}
 	
-	public void onPlacesChanged(List<Place> places) {
+	public void onPlacesChanged(List<PlaceOverlayWrapper> places) {
 		
 	}
 

@@ -13,13 +13,15 @@ import android.util.AttributeSet;
 import android.util.Log;
 
 import com.common.Place;
+import com.common.PlaceOverlayWrapper;
 
 public class RealitySmallCompassView extends SensorView {
 
 	public static final String TAG = RealityActivity.TAG;// "RealityCompassView";
 
-	private static final int PLACE_RADIUS = 4;
-	private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+	private static final int PLACE_RADIUS = 3;
+	private final Paint mHeadingPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+	private final Paint mPlacePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
 	private float mOrientationValues[] = new float[3];
 
@@ -37,13 +39,16 @@ public class RealitySmallCompassView extends SensorView {
 
 	private boolean mFirstDraw = true;
 
-	private List<Place> mCachedPlaces = null;
+	private List<PlaceOverlayWrapper> mCachedPlaces = null;
 
 	public RealitySmallCompassView(Context context, AttributeSet attr) {
 		super(context, attr);
 
-		mPaint.setARGB(100, 61, 89, 171);
-		mPaint.setStrokeWidth(20);
+		mHeadingPaint.setARGB(60, 61, 89, 171);
+		mHeadingPaint.setStrokeWidth(20);
+
+		mPlacePaint.setARGB(255, 61, 89, 171);
+		mPlacePaint.setStrokeWidth(20);
 	}
 
 	@Override
@@ -134,7 +139,7 @@ public class RealitySmallCompassView extends SensorView {
 						+ mRadius);
 
 				canvas.drawBitmap(mBitmap, mCompassX, mCompassY, null);
-				canvas.drawArc(oval, values[0] - 105, 30, true, mPaint);
+				canvas.drawArc(oval, values[0] - 105, 30, true, mHeadingPaint);
 			}
 		} else {
 			onSizeChanged(0, 0, 0, 0);
@@ -143,17 +148,15 @@ public class RealitySmallCompassView extends SensorView {
 
 	public void onSensorChanged(SensorEvent event) {
 		synchronized (this) {
-			mOrientationValues = event.values;
-			
 			// Must copy over the values.
-			// System.arraycopy(event.values, 0, mOrientationValues, 0, 3);
+			System.arraycopy(event.values, 0, mOrientationValues, 0, 3);
 		}
 	}
 
 	@Override
-	public void onPlacesChanged(List<Place> places) {
+	public void onPlacesChanged(List<PlaceOverlayWrapper> places) {
 		if (mCanvas != null) {
-			Paint paint = mPaint;
+			Paint paint = mPlacePaint;
 
 			Log.d(TAG, "onPlacesChanged() - Loading " + places.size()
 					+ " places.");
@@ -163,10 +166,21 @@ public class RealitySmallCompassView extends SensorView {
 			double maxDistance = 0f;
 
 			if (places.size() > 0) {
+				if (!mFirstDraw) {
+					mCanvas.restore();
+				} else {
+					mFirstDraw = false;
+				}
+				// Save the "place-free" state of the canvas.
+				mCanvas.save();
+
 				radius = mRadius - PLACE_RADIUS;
 
+				Place place;
 				// Find the farthest place in terms of distance.
-				for (Place place : places) {
+				for (PlaceOverlayWrapper p : places) {
+					place = p.place;
+
 					distance = place.distance;
 
 					if (distance > maxDistance) {
@@ -174,7 +188,9 @@ public class RealitySmallCompassView extends SensorView {
 					}
 				}
 
-				for (Place place : places) {
+				for (PlaceOverlayWrapper p : places) {
+					place = p.place;
+
 					/*
 					 * Calculate the positioning of the place on the compass
 					 * view.

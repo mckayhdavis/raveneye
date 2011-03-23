@@ -41,6 +41,10 @@ public class RealityLocationListener implements LocationListener {
 		return mDeviceLocation != null;
 	}
 
+	public void reset() {
+		mDeviceLocation = null;
+	}
+
 	/**
 	 * Returns the last known current location.
 	 * 
@@ -52,7 +56,7 @@ public class RealityLocationListener implements LocationListener {
 
 	public void onLocationChanged(Location location) {
 		mDeviceLocation = location;
-		
+
 		/*
 		 * Broadcast to the observers.
 		 */
@@ -78,7 +82,7 @@ public class RealityLocationListener implements LocationListener {
 	public void onStatusChanged(String provider, int status, Bundle extras) {
 		Log.d(TAG, "onStatusChanged() - Using " + extras.getInt("satellites")
 				+ " satellites");
-		
+
 		/*
 		 * Broadcast to the observers.
 		 */

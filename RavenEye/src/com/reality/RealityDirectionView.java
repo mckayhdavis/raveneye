@@ -18,6 +18,8 @@ public class RealityDirectionView extends SensorView implements
 
 	public static final String TAG = RealityActivity.TAG;
 
+	private static final int ALPHA = 255;
+
 	private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
 	private final float[] mOrientation = new float[3];
@@ -33,12 +35,12 @@ public class RealityDirectionView extends SensorView implements
 
 	private Path mPath = null;
 
-	private int mBitmapX;
-	private int mBitmapY;
-
-	private Canvas mCanvas = null;
-	private Bitmap mBitmap = null;
-	private Camera mCamera;
+	// private int mBitmapX;
+	// private int mBitmapY;
+	//
+	// private Canvas mCanvas = null;
+	// private Bitmap mBitmap = null;
+	// private Camera mCamera;
 
 	public RealityDirectionView(Context context, AttributeSet attr) {
 		super(context, attr);
@@ -48,7 +50,7 @@ public class RealityDirectionView extends SensorView implements
 		mPaint.setStyle(Paint.Style.STROKE);
 		mPaint.setShadowLayer(10, 5, 5, Color.BLACK);
 
-		mCamera = new Camera();
+		// mCamera = new Camera();
 
 		this.setWillNotDraw(true);
 	}
@@ -156,7 +158,7 @@ public class RealityDirectionView extends SensorView implements
 		float alpha = (difference / 180);
 		float beta = 1 - alpha;
 
-		mPaint.setARGB(100, (int) (alpha * 255), (int) (beta * 255), 0);
+		mPaint.setARGB(ALPHA, (int) (alpha * 255), (int) (beta * 255), 0);
 	}
 
 	public void onDirectionsChanged(DirectionEvent event) {

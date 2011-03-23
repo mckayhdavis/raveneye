@@ -1,18 +1,22 @@
 package com.reality;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
-import com.reality.R;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.hardware.Sensor;
-import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Criteria;
@@ -35,20 +39,31 @@ import android.view.ViewStub;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.common.BearingDirectionManager;
+import com.common.BearingWaypoint;
 import com.common.Coordinate;
 import com.common.DirectionEvent;
 import com.common.DirectionManager;
 import com.common.DirectionObserver;
 import com.common.Directions;
+import com.common.LocationDirectionManager;
+import com.common.LocationWaypoint;
+import com.common.ObjectLocationImporter;
 import com.common.Place;
 import com.common.Waypoint;
-import com.common.XmlReader;
 
-public class RealityActivity extends Activity implements SensorEventListener,
-		LocationListener, DirectionObserver {
+public class RealityActivity extends Activity implements LocationListener,
+		DirectionObserver {
 
 	public static final String TAG = "RealityActivity";
 	public static final boolean USE_CAMERA = true;
+
+	private static final int DIALOG_LOADING_GPS = 0;
+	private static final int DIALOG_LOADING_DIRECTIONS = 1;
+	private static final int DIALOG_GPS_UNAVAILABLE = 2;
+	private static final int DIALOG_DOWNLOADING_DIRECTIONS = 3;
+
+	public static final String DIRECTIONS_FILE_NAME = "raven-graph";
 
 	private Camera camera;
 	private SurfaceView preview = null;
@@ -56,32 +71,27 @@ public class RealityActivity extends Activity implements SensorEventListener,
 
 	private LocationManager mLocationManager;
 	private SensorManager mSensorManager;
-	private DirectionManager mDirectionManager = null;
+	private DirectionManager<?> mDirectionManager = null;
 
+	public static final int ACQUIRE_GPS_TIMEOUT = 15000;
 	public static final int MIN_TIME_BETWEEN_LOCATION_UPDATES = 1000;
 	public static final int MIN_DISTANCE_BETWEEN_LOCATION_UPDATES = 3;
 
 	private RealityOverlayView mSurface;
 	private RealitySmallCompassView mCompassView;
 	private RealityDirectionView mDirectionView = null;
-	private TextView compassHeadingLabel;
 
 	private TextView mStatusLabel;
 	private TextView mDirectionsLabel;
 
-	private boolean mIsReceivingLocations = false;
-
-	// private View mPlaceDescriptionView;
-	// private TextView mTitleView;
-	// private TextView mDescriptionView;
-
-	private String[] headingNames = HeadingString.getHeadingNames();
+	private View mPlaceDescriptionView;
+	private TextView mTitleView;
+	private TextView mDescriptionView;
 
 	private RealityLocationListener mLocationListener;
 	private RealityOrientationListener mOrientationListener;
 
-	private ProgressDialog mLoadingDialog;
-	private ProgressDialog mDirectionsLoadingDialog;
+	private Timer mGpsTimer;
 
 	protected static final String PROXIMITY_ALERT = new String(
 			"android.intent.action.PROXIMITY_ALERT");
@@ -106,7 +116,7 @@ public class RealityActivity extends Activity implements SensorEventListener,
 		 * Views
 		 */
 		mSurface = (RealityOverlayView) findViewById(R.id.surface);
-		compassHeadingLabel = (TextView) findViewById(R.id.compass_heading);
+		// compassHeadingLabel = (TextView) findViewById(R.id.compass_heading);
 		mCompassView = (RealitySmallCompassView) findViewById(R.id.compass);
 		mStatusLabel = (TextView) findViewById(R.id.status_output);
 		mDirectionsLabel = (TextView) findViewById(R.id.directions_output);
@@ -125,7 +135,6 @@ public class RealityActivity extends Activity implements SensorEventListener,
 		mLocationListener = new RealityLocationListener();
 		mOrientationListener = new RealityOrientationListener();
 
-		mOrientationListener.registerForUpdates(this);
 		mOrientationListener.registerForUpdates(mSurface);
 		mOrientationListener.registerForUpdates(mCompassView);
 
@@ -133,12 +142,9 @@ public class RealityActivity extends Activity implements SensorEventListener,
 		mLocationListener.registerForUpdates(mSurface);
 		// mLocationListener.registerForUpdates(mOrientationListener);
 
-		// mPlaceDescriptionView = findViewById(R.id.place_description);
-		// mTitleView = (TextView) findViewById(R.id.title);
-		// mDescriptionView = (TextView) findViewById(R.id.description);
-
-		// mStatusLabel.setText("Loading content...");
-		// mStatusLabel.setVisibility(View.VISIBLE);
+		mPlaceDescriptionView = findViewById(R.id.place_description);
+		mTitleView = (TextView) findViewById(R.id.title);
+		mDescriptionView = (TextView) findViewById(R.id.description);
 
 		/*
 		 * Passed in objects.
@@ -160,6 +166,8 @@ public class RealityActivity extends Activity implements SensorEventListener,
 	@Override
 	public void onResume() {
 		super.onResume();
+
+		mLocationListener.reset();
 
 		Criteria criteria = new Criteria();
 		criteria.setAccuracy(Criteria.ACCURACY_FINE);
@@ -357,17 +365,11 @@ public class RealityActivity extends Activity implements SensorEventListener,
 		case R.id.navigate:
 			if (mDirectionView == null
 					|| mDirectionView.getVisibility() == View.GONE) {
-				new DownloadDirectionsTask().execute();
+				new DownloadDirectionsTask().execute((Place) null);
 
 				item.setTitle("Stop Navigation");
 			} else {
-				mOrientationListener.deregister(mDirectionView);
-				mLocationListener.deregisterForUpdates(mDirectionManager);
-
-				mDirectionView.setVisibility(View.GONE);
-				mDirectionView.setWillNotDraw(true);
-
-				mDirectionsLabel.setVisibility(View.GONE);
+				dismissDirectionOverlay();
 
 				item.setTitle("Start Navigation");
 			}
@@ -431,24 +433,64 @@ public class RealityActivity extends Activity implements SensorEventListener,
 	};
 
 	/*
+	 * Dialog methods.
+	 */
+
+	protected Dialog onCreateDialog(int id) {
+		Dialog dialog;
+		switch (id) {
+		case DIALOG_LOADING_GPS:
+			dialog = ProgressDialog.show(this, null,
+					"Acquiring GPS signal. Please wait...");
+			break;
+		case DIALOG_LOADING_DIRECTIONS:
+			dialog = ProgressDialog.show(this, null,
+					"Loading directions. Please wait...");
+			break;
+		case DIALOG_GPS_UNAVAILABLE:
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			builder.setTitle("Unable to acquire satellite signal")
+					.setMessage(
+							"The reality compass will still work, but navigation will not.")
+					.setCancelable(true)
+					.setNegativeButton("Close",
+							new DialogInterface.OnClickListener() {
+								public void onClick(DialogInterface dialog,
+										int id) {
+									dialog.cancel();
+								}
+							});
+			dialog = builder.create();
+			break;
+		case DIALOG_DOWNLOADING_DIRECTIONS:
+			dialog = ProgressDialog.show(this, null,
+					"Downloading directions. Please wait...");
+			break;
+		default:
+			dialog = null;
+		}
+		return dialog;
+	}
+
+	/*
 	 * SensorEventListener methods.
 	 */
 
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-		Log.d(TAG, "Sensor Accuracy changed: " + sensor + ", " + accuracy);
+
 	}
 
-	public void onSensorChanged(SensorEvent event) {
-		final float[] values = event.values;
-
-		int val = (int) values[0];
-
-		String displayDir = headingNames[val];
-
-		if (!compassHeadingLabel.getText().equals(displayDir)) {
-			compassHeadingLabel.setText(displayDir);
-		}
-	}
+	// public void onSensorChanged(SensorEvent event) {
+	// final float[] values = event.values;
+	//
+	// int val = (int) values[0];
+	//
+	// String displayDir = headingNames[val];
+	//
+	// if (!compassHeadingLabel.getText().equals(displayDir)) {
+	// compassHeadingLabel.setText(displayDir);
+	// }
+	// }
 
 	/*
 	 * MotionEvent methods.
@@ -457,29 +499,87 @@ public class RealityActivity extends Activity implements SensorEventListener,
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		if (event.getAction() == MotionEvent.ACTION_DOWN) {
-			// View view = mPlaceDescriptionView;
-			//
+			View view = mPlaceDescriptionView;
+
 			Place place = mSurface.getPlaceAt((int) event.getX(),
 					(int) event.getY());
 
 			if (place != null) {
-				Toast.makeText(this, "Place: " + place, Toast.LENGTH_SHORT);
+				mTitleView.setText(place.name);
+				mDescriptionView.setText(Place
+						.getDistanceString(place.distance));
+				view.setVisibility(View.VISIBLE);
+			} else {
+				view.setVisibility(View.GONE);
 			}
-
-			//
-			// boolean isPlace = place != null;
-			//
-			// int visibility = isPlace ? View.VISIBLE : View.GONE;
-			//
-			// if (isPlace) {
-			// mTitleView.setText("Place");
-			// mDescriptionView.setText("Description");
-			// }
-			//
-			// view.setVisibility(visibility);
 		}
 
 		return true;
+	}
+
+	/*
+	 * Button listeners.
+	 */
+
+	public void onNavigateToPlaceClick(View v) {
+		mPlaceDescriptionView.setVisibility(View.GONE);
+
+		Place place = mSurface.getSelectedPlace();
+		if (place != null) {
+			Coordinate coord = place.coordinate;
+			if (coord != null) {
+
+			}
+		}
+	}
+
+	public void onPlaceInfoClick(View v) {
+		Place place = mSurface.getSelectedPlace();
+		// TODO: Shouldn't ever be null...
+		if (place != null) {
+			Intent intent = new Intent(this, PlacesActivity.class);
+			intent.putExtra(Place.class.toString(), place);
+			this.startActivity(intent);
+		}
+	}
+
+	private void dismissDirectionOverlay() {
+		mOrientationListener.deregisterForUpdates(mDirectionView);
+
+		deregisterDirectionManager();
+
+		mDirectionView.setVisibility(View.GONE);
+		mDirectionView.setWillNotDraw(true);
+
+		mDirectionsLabel.setVisibility(View.GONE);
+	}
+
+	private void registerDirectionManager() {
+		if (mDirectionManager instanceof LocationListener) {
+			LocationListener listener = (LocationListener) mDirectionManager;
+			mLocationListener.registerForUpdates(listener);
+
+			// Provide a quick location update. An up-to-date GPS location might
+			// be seconds away, so provide a recent update so that the user
+			// doesn't wait.
+			Location location = mLocationListener.getLastKnownLocation();
+			if (location != null) {
+				listener.onLocationChanged(location);
+			}
+		} else {
+			mOrientationListener
+					.registerForUpdates((SensorEventListener) mDirectionManager);
+		}
+	}
+
+	private void deregisterDirectionManager() {
+		if (mDirectionManager instanceof LocationListener) {
+			mLocationListener
+					.deregisterForUpdates((LocationListener) mDirectionManager);
+		} else {
+			mOrientationListener
+					.deregisterForUpdates((SensorEventListener) mDirectionManager);
+		}
 	}
 
 	/*
@@ -487,7 +587,14 @@ public class RealityActivity extends Activity implements SensorEventListener,
 	 */
 
 	public void onDirectionsChanged(DirectionEvent event) {
-		mDirectionsLabel.setText("Distance: " + event.distance);
+		if (event.status == DirectionEvent.STATUS_ARRIVED) {
+			// dismissDirectionOverlay();
+
+			Log.d(TAG, "Arrived at destination");
+			mDirectionsLabel.setText("Arrived!");
+		} else {
+			mDirectionsLabel.setText(Place.getDistanceString(event.distance));
+		}
 	}
 
 	/*
@@ -495,10 +602,13 @@ public class RealityActivity extends Activity implements SensorEventListener,
 	 */
 
 	public void onLocationChanged(Location location) {
-		if (mLoadingDialog != null && mLocationListener.hasLocation()) {
-			mLoadingDialog.dismiss();
-			mLoadingDialog = null;
+		if (mLocationListener.hasLocation()) {
+			if (mGpsTimer != null) {
+				mGpsTimer.cancel();
+				mGpsTimer = null;
 
+				dismissDialog(DIALOG_LOADING_GPS);
+			}
 		}
 
 		mStatusLabel.setText("Accuracy: " + location.getAccuracy());
@@ -512,8 +622,7 @@ public class RealityActivity extends Activity implements SensorEventListener,
 
 	public void onStatusChanged(String provider, int status, Bundle extras) {
 		if (status != LocationProvider.AVAILABLE) {
-			mLoadingDialog = ProgressDialog.show(RealityActivity.this, "",
-					"Lost satellite signal. Please wait...", true);
+			showDialog(DIALOG_LOADING_GPS);
 		}
 	}
 
@@ -528,9 +637,25 @@ public class RealityActivity extends Activity implements SensorEventListener,
 
 				public void run() {
 					if (!mLocationListener.hasLocation()) {
-						mLoadingDialog = ProgressDialog.show(
-								RealityActivity.this, "",
-								"Acquiring location. Please wait...", true);
+						showDialog(DIALOG_LOADING_GPS);
+
+						TimerTask task = new TimerTask() {
+
+							@Override
+							public void run() {
+								runOnUiThread(new Runnable() {
+
+									public void run() {
+										dismissDialog(DIALOG_LOADING_GPS);
+										showDialog(DIALOG_GPS_UNAVAILABLE);
+									}
+
+								});
+							}
+
+						};
+						mGpsTimer = new Timer();
+						mGpsTimer.schedule(task, ACQUIRE_GPS_TIMEOUT);
 					}
 				}
 
@@ -550,6 +675,16 @@ public class RealityActivity extends Activity implements SensorEventListener,
 						}
 					}
 				}
+
+				if (places.length == 1) {
+					place = (Place) places[0];
+					float bearing = place.bearing;
+					if (bearing >= 0) {
+						Waypoint waypoint = new BearingWaypoint(bearing);
+						waypoint.setPlace(place);
+						new GenerateDirectionsTask().execute(waypoint);
+					}
+				}
 			} else {
 				/*
 				 * This is for debugging purposes only.
@@ -562,30 +697,101 @@ public class RealityActivity extends Activity implements SensorEventListener,
 
 		protected void onPostExecute(final List<Place> places) {
 			updateWithPlaces(places);
+
+			Location location = mLocationListener.getLastKnownLocation();
+			if (location != null) {
+				mLocationListener.onLocationChanged(location);
+			}
 		}
 
 	}
 
 	private class DownloadDirectionsTask extends
-			AsyncTask<Void, Void, Waypoint> {
-		protected Waypoint doInBackground(Void... params) {
+			AsyncTask<Place, Void, Waypoint> {
+		protected Waypoint doInBackground(Place... place) {
 			runOnUiThread(new Runnable() {
 				public void run() {
-					mDirectionsLoadingDialog = ProgressDialog.show(
-							RealityActivity.this, "",
-							"Loading directions. Please wait...", true);
+					showDialog(DIALOG_DOWNLOADING_DIRECTIONS);
 				}
 			});
 
-			// Download the way-points.
-			Waypoint startWaypoint = XmlReader.getWaypoints();
+			return null;
+		}
 
-			Directions directions = new Directions(startWaypoint);
+		protected void onPostExecute(final Waypoint waypoint) {
+			dismissDialog(DIALOG_DOWNLOADING_DIRECTIONS);
 
-			mDirectionManager = new DirectionManager(mLocationManager);
-			mDirectionManager.setDirections(directions);
+			new GenerateDirectionsTask().execute(waypoint);
+		}
+
+	}
+
+	private class GenerateDirectionsTask extends
+			AsyncTask<Waypoint, Void, Waypoint> {
+		protected Waypoint doInBackground(Waypoint... placeWaypoint) {
+			Waypoint startWaypoint = null;
+
+			runOnUiThread(new Runnable() {
+				public void run() {
+					showDialog(DIALOG_LOADING_DIRECTIONS);
+				}
+			});
+
+			if (placeWaypoint[0] == null) {
+				// Download the way-points.
+				try {
+					startWaypoint = new ObjectLocationImporter()
+							.readFromFile(DIRECTIONS_FILE_NAME);
+
+					getDirections((LocationWaypoint) startWaypoint);
+				} catch (IOException e) {
+					Toast.makeText(RealityActivity.this,
+							"Error reading from directions", Toast.LENGTH_LONG);
+
+					Log.e(TAG, "Error reading from serialized object.");
+				}
+			} else {
+				Place place = placeWaypoint[0].getPlace();
+				if (place != null) {
+					Coordinate coord = place.coordinate;
+					if (coord != null) {
+						// Use a coordinate.
+						startWaypoint = new LocationWaypoint(coord);
+
+						getDirections((LocationWaypoint) startWaypoint);
+					} else {
+						// TODO: Otherwise, use a bearing (if any).
+						float bearing = place.bearing;
+						if (bearing >= 0) {
+							startWaypoint = new BearingWaypoint(bearing);
+
+							getDirections((BearingWaypoint) startWaypoint);
+						}
+					}
+				}
+			}
 
 			return startWaypoint;
+		}
+
+		private void getDirections(LocationWaypoint waypoint) {
+			Directions<LocationWaypoint> directions = new Directions<LocationWaypoint>(
+					waypoint);
+
+			LocationDirectionManager manager = new LocationDirectionManager();
+			manager.setDirections(directions);
+
+			mDirectionManager = manager;
+		}
+
+		private void getDirections(BearingWaypoint waypoint) {
+			Directions<BearingWaypoint> directions = new Directions<BearingWaypoint>(
+					waypoint);
+
+			BearingDirectionManager manager = new BearingDirectionManager();
+			manager.setDirections(directions);
+
+			mDirectionManager = manager;
 		}
 
 		protected void onPostExecute(final Waypoint waypoint) {
@@ -597,19 +803,22 @@ public class RealityActivity extends Activity implements SensorEventListener,
 				mDirectionView.setWillNotDraw(false);
 			}
 
-			mDirectionsLabel.setText("");
+			if (waypoint == null) {
+				Log.d(TAG, "Directions not found.");
+			}
+
+			mDirectionsLabel.setText("...");
 			mDirectionsLabel.setVisibility(View.VISIBLE);
 
 			mDirectionManager.registerObserver(mDirectionView);
 			mDirectionManager.registerObserver(RealityActivity.this);
 
 			mOrientationListener.registerForUpdates(mDirectionView);
-			mLocationListener.registerForUpdates(mDirectionManager);
 
-			mDirectionsLoadingDialog.dismiss();
-			mDirectionsLoadingDialog = null;
+			dismissDialog(DIALOG_LOADING_DIRECTIONS);
+
+			registerDirectionManager();
 		}
-
 	}
 
 }

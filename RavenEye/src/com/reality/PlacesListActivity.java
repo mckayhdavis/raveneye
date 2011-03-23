@@ -424,9 +424,9 @@ public class PlacesListActivity extends ListActivity {
 
 			holder.icon.setImageBitmap(bitmap);
 			holder.top.setText(place.name);
-			if (place.getLastKnownDistance() > 0) {
+			if (place.distance >= 0) {
 				holder.bottom.setText("Distance: "
-						+ place.getLastKnownDistanceString());
+						+ Place.getDistanceString(place.distance));
 			} else {
 				holder.bottom.setText("");
 			}

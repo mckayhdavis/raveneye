@@ -28,13 +28,13 @@ public class RealityOrientationListener implements SensorEventListener,
 	/*
 	 * The higher the alpha, the faster the scaling occurs.
 	 */
-	public static volatile float ALPHA = (float) 0.1;
+	public static volatile float ALPHA = (float) 0.05;
 	public static volatile float BETA = 1 - ALPHA;
 
 	public static volatile float SLOW_ALPHA = (float) 0.005;
 	public static volatile float SLOW_BETA = 1 - SLOW_ALPHA;
 
-	public static final int DEAD_ZONE_MOVEMENT = 4; // in degrees
+	public static final int DEAD_ZONE_MOVEMENT = 7; // in degrees
 
 	float[] mR = new float[16];
 	float[] mOutR = new float[16];
@@ -58,7 +58,7 @@ public class RealityOrientationListener implements SensorEventListener,
 		mObservers.add(observer);
 	}
 
-	public void deregister(SensorEventListener observer) {
+	public void deregisterForUpdates(SensorEventListener observer) {
 		mObservers.remove(observer);
 	}
 
@@ -71,14 +71,15 @@ public class RealityOrientationListener implements SensorEventListener,
 	}
 
 	public void onSensorChanged(SensorEvent event) {
-		synchronized (this) {
-			if (event.accuracy != SensorManager.SENSOR_STATUS_ACCURACY_HIGH) {
-				return;
-			}
+		if (event.accuracy != SensorManager.SENSOR_STATUS_ACCURACY_HIGH) {
+			return;
+		}
 
+		final float[] gravity = mGravity;
+		final float[] geomagnetic = mGeomagnetic;
+
+		synchronized (this) {
 			final float[] values = event.values;
-			final float[] gravity = mGravity;
-			final float[] geomagnetic = mGeomagnetic;
 
 			switch (event.sensor.getType()) {
 			case Sensor.TYPE_ACCELEROMETER:
@@ -107,6 +108,9 @@ public class RealityOrientationListener implements SensorEventListener,
 
 			filterValues(values); // filter sensor noise
 			// lightFilterValues(values); // filter sensor noise
+
+			Log.d(TAG, "(" + values[0] + "," + values[1] + "," + values[2]
+					+ ") " + event.sensor.getResolution());
 
 			/*
 			 * Broadcast to the observers.
@@ -196,9 +200,6 @@ public class RealityOrientationListener implements SensorEventListener,
 			// bounds).
 			oldValues[0] = 0;
 		}
-
-		// Log.d(TAG, "(" + values[0] + "," + values[1] + "," + values[2] +
-		// ")");
 	}
 
 	/*
