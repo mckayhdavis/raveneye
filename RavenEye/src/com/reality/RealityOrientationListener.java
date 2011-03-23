@@ -202,6 +202,10 @@ public class RealityOrientationListener implements SensorEventListener,
 		}
 	}
 
+	public boolean hasLocation() {
+		return mHasDeclination;
+	}
+
 	/*
 	 * LocationListener methods.
 	 */

@@ -116,7 +116,6 @@ public class RealityActivity extends Activity implements LocationListener,
 		 * Views
 		 */
 		mSurface = (RealityOverlayView) findViewById(R.id.surface);
-		// compassHeadingLabel = (TextView) findViewById(R.id.compass_heading);
 		mCompassView = (RealitySmallCompassView) findViewById(R.id.compass);
 		mStatusLabel = (TextView) findViewById(R.id.status_output);
 		mDirectionsLabel = (TextView) findViewById(R.id.directions_output);
@@ -140,7 +139,6 @@ public class RealityActivity extends Activity implements LocationListener,
 
 		mLocationListener.registerForUpdates(this);
 		mLocationListener.registerForUpdates(mSurface);
-		// mLocationListener.registerForUpdates(mOrientationListener);
 
 		mPlaceDescriptionView = findViewById(R.id.place_description);
 		mTitleView = (TextView) findViewById(R.id.title);
@@ -608,6 +606,10 @@ public class RealityActivity extends Activity implements LocationListener,
 				mGpsTimer = null;
 
 				dismissDialog(DIALOG_LOADING_GPS);
+			}
+
+			if (!mOrientationListener.hasLocation()) {
+				mOrientationListener.onLocationChanged(location);
 			}
 		}
 
