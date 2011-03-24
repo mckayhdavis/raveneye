@@ -28,7 +28,7 @@ public class RealityOrientationListener implements SensorEventListener,
 	/*
 	 * The higher the alpha, the faster the scaling occurs.
 	 */
-	public static volatile float ALPHA = (float) 0.05;
+	public static volatile float ALPHA = (float) 0.2;
 	public static volatile float BETA = 1 - ALPHA;
 
 	public static volatile float SLOW_ALPHA = (float) 0.005;
@@ -109,8 +109,8 @@ public class RealityOrientationListener implements SensorEventListener,
 			filterValues(values); // filter sensor noise
 			// lightFilterValues(values); // filter sensor noise
 
-			Log.d(TAG, "(" + values[0] + "," + values[1] + "," + values[2]
-					+ ") " + event.sensor.getResolution());
+			// Log.d(TAG, "(" + values[0] + "," + values[1] + "," + values[2]
+			// + ") " + event.sensor.getResolution());
 
 			/*
 			 * Broadcast to the observers.
@@ -126,7 +126,7 @@ public class RealityOrientationListener implements SensorEventListener,
 		values[1] *= rad2deg; // pitch
 		values[2] *= rad2deg; // roll
 
-		values[0] -= mDeclination;
+		values[0] += mDeclination;
 
 		// Convert the (-180,180] range to [0,360).
 		if (values[0] < 0) {
@@ -176,7 +176,7 @@ public class RealityOrientationListener implements SensorEventListener,
 		oldValues[1] = values[1];
 		oldValues[2] = values[2];
 
-		values[0] -= mDeclination;
+		values[0] += mDeclination;
 
 		// Convert the (-180,180] range to [0,360).
 		if (values[0] < -360) {

@@ -146,29 +146,31 @@ public class RealityDirectionView extends SensorView implements
 			storedValues[0] = values[0];
 			storedValues[1] = values[1];
 			storedValues[2] = values[2];
+
+			difference = Math.abs(storedValues[0] - mHeading);
+
+			// We cross north (0 degrees).
+			if (difference > 180) {
+				difference = 360 - difference;
+			}
+
+			float alpha = (difference / 180);
+			float beta = 1 - alpha;
+
+			mPaint.setARGB(ALPHA, (int) (alpha * 255), (int) (beta * 255), 0);
 		}
-
-		difference = Math.abs(storedValues[0] - mHeading);
-
-		// We cross north (0 degrees).
-		if (difference > 180) {
-			difference = 360 - difference;
-		}
-
-		float alpha = (difference / 180);
-		float beta = 1 - alpha;
-
-		mPaint.setARGB(ALPHA, (int) (alpha * 255), (int) (beta * 255), 0);
 	}
 
 	public void onDirectionsChanged(DirectionEvent event) {
-		if (!mHasDirections) {
-			mHasDirections = true;
+		synchronized (this) {
+			if (!mHasDirections) {
+				mHasDirections = true;
 
-			this.setWillNotDraw(false);
+				this.setWillNotDraw(false);
+			}
+
+			mHeading = event.bearing;
 		}
-
-		mHeading = event.bearing;
 	}
 
 }

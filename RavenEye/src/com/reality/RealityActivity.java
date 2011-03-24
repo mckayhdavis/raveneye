@@ -62,6 +62,7 @@ public class RealityActivity extends Activity implements LocationListener,
 	private static final int DIALOG_LOADING_DIRECTIONS = 1;
 	private static final int DIALOG_GPS_UNAVAILABLE = 2;
 	private static final int DIALOG_DOWNLOADING_DIRECTIONS = 3;
+	private static final int DIALOG_DOWNLOADING_DIRECTIONS_FAILED = 4;
 
 	public static final String DIRECTIONS_FILE_NAME = "raven-graph";
 
@@ -350,6 +351,22 @@ public class RealityActivity extends Activity implements LocationListener,
 	}
 
 	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		boolean flag = super.onPrepareOptionsMenu(menu);
+
+		// menu.clear();
+		MenuItem item = menu.getItem(0);
+
+		if (mDirectionManager == null) {
+			item.setTitle("Start Navigation");
+		} else {
+			item.setTitle("Stop Navigation");
+		}
+
+		return flag;
+	}
+
+	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.reality, menu);
@@ -364,12 +381,8 @@ public class RealityActivity extends Activity implements LocationListener,
 			if (mDirectionView == null
 					|| mDirectionView.getVisibility() == View.GONE) {
 				new DownloadDirectionsTask().execute((Place) null);
-
-				item.setTitle("Stop Navigation");
 			} else {
 				dismissDirectionOverlay();
-
-				item.setTitle("Start Navigation");
 			}
 
 			return true;
@@ -464,6 +477,20 @@ public class RealityActivity extends Activity implements LocationListener,
 			dialog = ProgressDialog.show(this, null,
 					"Downloading directions. Please wait...");
 			break;
+		case DIALOG_DOWNLOADING_DIRECTIONS_FAILED:
+			builder = new AlertDialog.Builder(this);
+			builder.setTitle("Unable to load directions")
+					.setMessage("No directions were found.")
+					.setCancelable(true)
+					.setNegativeButton("Close",
+							new DialogInterface.OnClickListener() {
+								public void onClick(DialogInterface dialog,
+										int id) {
+									dialog.cancel();
+								}
+							});
+			dialog = builder.create();
+			break;
 		default:
 			dialog = null;
 		}
@@ -550,11 +577,14 @@ public class RealityActivity extends Activity implements LocationListener,
 		mDirectionView.setWillNotDraw(true);
 
 		mDirectionsLabel.setVisibility(View.GONE);
+		mDirectionManager = null;
 	}
 
-	private void registerDirectionManager() {
-		if (mDirectionManager instanceof LocationListener) {
-			LocationListener listener = (LocationListener) mDirectionManager;
+	private void registerDirectionManager(DirectionManager manager) {
+		mDirectionManager = manager;
+
+		if (manager instanceof LocationListener) {
+			LocationListener listener = (LocationListener) manager;
 			mLocationListener.registerForUpdates(listener);
 
 			// Provide a quick location update. An up-to-date GPS location might
@@ -566,11 +596,11 @@ public class RealityActivity extends Activity implements LocationListener,
 			}
 		} else {
 			mOrientationListener
-					.registerForUpdates((SensorEventListener) mDirectionManager);
+					.registerForUpdates((SensorEventListener) manager);
 		}
 	}
 
-	private void deregisterDirectionManager() {
+	private synchronized void deregisterDirectionManager() {
 		if (mDirectionManager instanceof LocationListener) {
 			mLocationListener
 					.deregisterForUpdates((LocationListener) mDirectionManager);
@@ -729,9 +759,10 @@ public class RealityActivity extends Activity implements LocationListener,
 	}
 
 	private class GenerateDirectionsTask extends
-			AsyncTask<Waypoint, Void, Waypoint> {
-		protected Waypoint doInBackground(Waypoint... placeWaypoint) {
-			Waypoint startWaypoint = null;
+			AsyncTask<Waypoint, Void, DirectionManager> {
+		protected DirectionManager doInBackground(Waypoint... placeWaypoint) {
+			DirectionManager directionManager = null;
+			Waypoint startWaypoint;
 
 			runOnUiThread(new Runnable() {
 				public void run() {
@@ -745,7 +776,11 @@ public class RealityActivity extends Activity implements LocationListener,
 					startWaypoint = new XmlLocationImporter()
 							.readFromFile(DIRECTIONS_FILE_NAME);
 
-					getDirections((LocationWaypoint) startWaypoint);
+					Log.d(TAG, "Have waypoint");
+
+					directionManager = getDirections((LocationWaypoint) startWaypoint);
+
+					Log.d(TAG, "Have directions possibly");
 				} catch (IOException e) {
 					Toast.makeText(RealityActivity.this,
 							"Error reading from directions", Toast.LENGTH_LONG);
@@ -760,66 +795,84 @@ public class RealityActivity extends Activity implements LocationListener,
 						// Use a coordinate.
 						startWaypoint = new LocationWaypoint(coord);
 
-						getDirections((LocationWaypoint) startWaypoint);
+						directionManager = getDirections((LocationWaypoint) startWaypoint);
 					} else {
 						// TODO: Otherwise, use a bearing (if any).
 						float bearing = place.bearing;
 						if (bearing >= 0) {
 							startWaypoint = new BearingWaypoint(bearing);
 
-							getDirections((BearingWaypoint) startWaypoint);
+							directionManager = getDirections((BearingWaypoint) startWaypoint);
 						}
 					}
 				}
 			}
 
-			return startWaypoint;
+			return directionManager;
 		}
 
-		private void getDirections(LocationWaypoint waypoint) {
-			Directions<LocationWaypoint> directions = new Directions<LocationWaypoint>(
-					waypoint);
+		private DirectionManager getDirections(LocationWaypoint waypoint) {
+			if (waypoint != null) {
+				Directions<LocationWaypoint> directions = new Directions<LocationWaypoint>(
+						waypoint);
 
-			LocationDirectionManager manager = new LocationDirectionManager();
-			manager.setDirections(directions);
+				LocationDirectionManager manager = new LocationDirectionManager();
+				manager.setDirections(directions);
 
-			mDirectionManager = manager;
-		}
-
-		private void getDirections(BearingWaypoint waypoint) {
-			Directions<BearingWaypoint> directions = new Directions<BearingWaypoint>(
-					waypoint);
-
-			BearingDirectionManager manager = new BearingDirectionManager();
-			manager.setDirections(directions);
-
-			mDirectionManager = manager;
-		}
-
-		protected void onPostExecute(final Waypoint waypoint) {
-			if (mDirectionView == null) {
-				mDirectionView = (RealityDirectionView) ((ViewStub) findViewById(R.id.directions_stub))
-						.inflate();
+				return manager;
 			} else {
-				mDirectionView.setVisibility(View.VISIBLE);
-				mDirectionView.setWillNotDraw(false);
+				runOnUiThread(new Runnable() {
+					public void run() {
+						showDialog(DIALOG_DOWNLOADING_DIRECTIONS_FAILED);
+					}
+				});
 			}
+			return null;
+		}
 
-			if (waypoint == null) {
+		private DirectionManager getDirections(BearingWaypoint waypoint) {
+			if (waypoint != null) {
+				Directions<BearingWaypoint> directions = new Directions<BearingWaypoint>(
+						waypoint);
+
+				BearingDirectionManager manager = new BearingDirectionManager();
+				manager.setDirections(directions);
+
+				return manager;
+			} else {
+				runOnUiThread(new Runnable() {
+					public void run() {
+						showDialog(DIALOG_DOWNLOADING_DIRECTIONS_FAILED);
+					}
+				});
+			}
+			return null;
+		}
+
+		protected void onPostExecute(final DirectionManager directionManager) {
+			if (directionManager != null) {
+				if (mDirectionView == null) {
+					mDirectionView = (RealityDirectionView) ((ViewStub) findViewById(R.id.directions_stub))
+							.inflate();
+				} else {
+					mDirectionView.setVisibility(View.VISIBLE);
+					mDirectionView.setWillNotDraw(false);
+				}
+
+				mDirectionsLabel.setText("...");
+				mDirectionsLabel.setVisibility(View.VISIBLE);
+
+				directionManager.registerObserver(mDirectionView);
+				directionManager.registerObserver(RealityActivity.this);
+
+				mOrientationListener.registerForUpdates(mDirectionView);
+
+				registerDirectionManager(directionManager);
+			} else {
 				Log.d(TAG, "Directions not found.");
 			}
 
-			mDirectionsLabel.setText("...");
-			mDirectionsLabel.setVisibility(View.VISIBLE);
-
-			mDirectionManager.registerObserver(mDirectionView);
-			mDirectionManager.registerObserver(RealityActivity.this);
-
-			mOrientationListener.registerForUpdates(mDirectionView);
-
 			dismissDialog(DIALOG_LOADING_DIRECTIONS);
-
-			registerDirectionManager();
 		}
 	}
 
