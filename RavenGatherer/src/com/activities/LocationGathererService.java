@@ -16,7 +16,6 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.common.Coordinate;
 
@@ -41,7 +40,7 @@ public class LocationGathererService extends Service implements
 	public static final int MIN_TIME_BETWEEN_LOCATION_UPDATES = 500;
 	public static final int MIN_DISTANCE_BETWEEN_LOCATION_UPDATES = 0;
 
-	private Coordinate mCurrentCoordinate;
+	private Coordinate mCurrentCoordinate = null;
 
 	/**
 	 * Class for clients to access. Because we know this service always runs in
@@ -105,10 +104,6 @@ public class LocationGathererService extends Service implements
 		// Cancel the persistent notification.
 		mNM.cancel(NOTIFICATION);
 
-		// Tell the user we stopped.
-		Toast.makeText(this, R.string.local_service_stopped, Toast.LENGTH_SHORT)
-				.show();
-
 		/*
 		 * Remove the update listeners of the compass and GPS.
 		 */
@@ -127,7 +122,10 @@ public class LocationGathererService extends Service implements
 	private final IBinder mBinder = new LocalBinder();
 
 	public Coordinate getLatestCoordinate() {
-		return mCurrentCoordinate;
+		Coordinate coord = mCurrentCoordinate;
+		mCurrentCoordinate = null;
+
+		return coord;
 	}
 
 	/**
@@ -170,7 +168,7 @@ public class LocationGathererService extends Service implements
 			mCurrentCoordinate = coord;
 		}
 
-		mLocationBroadcast.putExtra(Coordinate.class.toString(), coord);
+		// mLocationBroadcast.putExtra(Coordinate.class.toString(), coord);
 		mLocationBroadcast.putExtra("count", ++mLocationUpdateCount);
 
 		this.sendBroadcast(mLocationBroadcast);

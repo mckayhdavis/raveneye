@@ -3,18 +3,22 @@ package com.activities;
 import java.io.IOException;
 
 import android.app.Activity;
+import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -23,10 +27,12 @@ import com.common.Coordinate;
 import com.common.IntersectionWaypoint;
 import com.common.LocationExporter;
 import com.common.LocationWaypoint;
-import com.common.ObjectLocationExporter;
 import com.common.Place;
+import com.common.XmlLocationExporter;
 
 public class MainActivity extends Activity {
+
+	public static final int DIALOG_EXPORTING_GRAPH = 0;
 
 	private boolean mIsBound = false;
 
@@ -35,6 +41,11 @@ public class MainActivity extends Activity {
 	private EditText mFileName;
 	private EditText mIntersectionName;
 	private EditText mPlaceName;
+	private Button mButtonPlace;
+	private Button mButtonWaypoint;
+	private Button mButtonIntersection;
+
+	private ProgressDialog mProgressDialog;
 
 	// TODO: Should not really have this in an activity... should be in the
 	// service.
@@ -51,8 +62,13 @@ public class MainActivity extends Activity {
 		mFileName = (EditText) findViewById(R.id.file_name);
 		mIntersectionName = (EditText) findViewById(R.id.intersection_name);
 		mPlaceName = (EditText) findViewById(R.id.place_name);
+		mButtonPlace = (Button) findViewById(R.id.button_addplace);
+		mButtonWaypoint = (Button) findViewById(R.id.button_addwaypoint);
+		mButtonIntersection = (Button) findViewById(R.id.button_addintersection);
 
-		mLocationExporter = new ObjectLocationExporter();
+		mLocationExporter = new XmlLocationExporter();
+
+		enableButtons(false);
 
 		doBindService();
 	}
@@ -74,10 +90,6 @@ public class MainActivity extends Activity {
 					.getService();
 
 			mCounter.setText(mBoundService.getCount() + "");
-
-			// Tell the user about this for our demo.
-			Toast.makeText(MainActivity.this, R.string.local_service_connected,
-					Toast.LENGTH_SHORT).show();
 		}
 
 		public void onServiceDisconnected(ComponentName className) {
@@ -86,9 +98,6 @@ public class MainActivity extends Activity {
 			// Because it is running in our same process, we should never
 			// see this happen.
 			mBoundService = null;
-			Toast.makeText(MainActivity.this,
-					R.string.local_service_disconnected, Toast.LENGTH_SHORT)
-					.show();
 		}
 	};
 
@@ -154,20 +163,7 @@ public class MainActivity extends Activity {
 		case R.id.exit:
 			String filename = mFileName.getText().toString();
 			if (!filename.equals("")) {
-				try {
-					mLocationExporter.writeToFile(filename);
-
-					this.finish();
-
-					// There should be no bound clients anymore, but we need to
-					// call
-					// stopService since the service was created with
-					// startService.
-					stopService(new Intent(this, LocationGathererService.class));
-				} catch (IOException e) {
-					Toast.makeText(this, "Error occured saving to file",
-							Toast.LENGTH_LONG);
-				}
+				new ExportGraphTask().execute(filename);
 			} else {
 				Toast.makeText(this, "Please enter file name.",
 						Toast.LENGTH_LONG);
@@ -177,6 +173,84 @@ public class MainActivity extends Activity {
 			return false;
 		}
 		return true;
+	}
+
+	/*
+	 * Dialog methods.
+	 */
+
+	protected Dialog onCreateDialog(int id) {
+		Dialog dialog;
+		switch (id) {
+		case DIALOG_EXPORTING_GRAPH:
+			if (mProgressDialog == null) {
+				mProgressDialog = new ProgressDialog(this);
+				mProgressDialog
+						.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+				mProgressDialog.setMessage("Exporting graph...");
+				mProgressDialog.setCancelable(false);
+				mProgressDialog.setMax(100);
+			}
+			dialog = mProgressDialog;
+			break;
+		default:
+			dialog = null;
+		}
+		return dialog;
+	}
+
+	private class ExportGraphTask extends AsyncTask<String, Integer, Boolean> {
+		protected Boolean doInBackground(String... filename) {
+			runOnUiThread(new Runnable() {
+
+				public void run() {
+					showDialog(DIALOG_EXPORTING_GRAPH);
+				}
+
+			});
+
+			try {
+				mLocationExporter.writeToFile(filename[0]);
+
+				return true;
+			} catch (IOException e) {
+				Toast.makeText(MainActivity.this,
+						"Error occured saving to file", Toast.LENGTH_LONG);
+			}
+
+			int count = 0;
+			long totalSize = 0;
+			for (int i = 0; i < count; i++) {
+				totalSize += i;
+				publishProgress((int) ((i / (float) count) * 100));
+			}
+			return false;
+		}
+
+		public void onProgressUpdate(Integer... progress) {
+			mProgressDialog.setProgress(progress[0]);
+		}
+
+		protected void onPostExecute(Boolean result) {
+			dismissDialog(DIALOG_EXPORTING_GRAPH);
+
+			if (result) {
+				MainActivity.this.finish();
+
+				// There should be no bound clients anymore, but we need to
+				// call
+				// stopService since the service was created with
+				// startService.
+				stopService(new Intent(MainActivity.this,
+						LocationGathererService.class));
+			}
+		}
+	}
+
+	private synchronized void enableButtons(boolean flag) {
+		mButtonPlace.setEnabled(flag);
+		mButtonWaypoint.setEnabled(flag);
+		mButtonIntersection.setEnabled(flag);
 	}
 
 	/*
@@ -191,6 +265,8 @@ public class MainActivity extends Activity {
 					int count = intent.getIntExtra("count", 0);
 
 					mCounter.setText(count + "");
+
+					enableButtons(true); // we have a location
 				}
 			}
 		}
@@ -211,36 +287,45 @@ public class MainActivity extends Activity {
 
 		mWaypointCounter.setText(mLocationExporter.size() + "");
 
+		enableButtons(false);
+
 		return key;
 	}
 
 	public void addPlaceClick(View view) {
 		Coordinate coord = mBoundService.getLatestCoordinate();
 
-		Place place = new Place(mPlaceName.getText().toString(), "", "", coord);
-		LocationWaypoint waypoint = new LocationWaypoint(coord);
-		waypoint.setPlace(place);
+		if (coord != null) {
+			Place place = new Place(mPlaceName.getText().toString(), "", "",
+					coord);
+			LocationWaypoint waypoint = new LocationWaypoint(coord);
+			waypoint.setPlace(place);
 
-		addWaypoint(waypoint);
+			addWaypoint(waypoint);
+		}
 	}
 
 	public void addWaypointClick(View view) {
 		Coordinate coord = mBoundService.getLatestCoordinate();
 
-		LocationWaypoint waypoint = new LocationWaypoint(coord);
+		if (coord != null) {
+			LocationWaypoint waypoint = new LocationWaypoint(coord);
 
-		addWaypoint(waypoint);
+			addWaypoint(waypoint);
+		}
 	}
 
 	public void addIntersectionClick(View view) {
 		Coordinate coord = mBoundService.getLatestCoordinate();
 
-		LocationWaypoint waypoint = new IntersectionWaypoint(coord);
+		if (coord != null) {
+			LocationWaypoint waypoint = new IntersectionWaypoint(coord);
 
-		String key = addWaypoint(waypoint);
+			String key = addWaypoint(waypoint);
 
-		Toast.makeText(this, "Intersection waypoint key: " + key,
-				Toast.LENGTH_LONG);
+			Toast.makeText(this, "Intersection waypoint key: " + key,
+					Toast.LENGTH_LONG);
+		}
 	}
 
 	public void viewMapClick(View view) {
