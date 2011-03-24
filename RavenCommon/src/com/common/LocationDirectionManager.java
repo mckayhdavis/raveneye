@@ -2,7 +2,6 @@ package com.common;
 
 import android.location.Location;
 import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
 
 public class LocationDirectionManager extends
@@ -41,14 +40,16 @@ public class LocationDirectionManager extends
 		 * we happen to skip-over two or more nearby way-points.
 		 */
 		for (;;) {
-			LocationWaypoint curWaypoint = mDirections.currentWaypoint();
-			if (curWaypoint == null) {
+			if (mDirections.currentWaypoint() == null) {
 				return;
 			}
 
-			Coordinate coord = (Coordinate) curWaypoint.getData();
+			Coordinate coord = (Coordinate) mDirections.currentWaypoint()
+					.getData();
+
 			mWaypointLocation.setLatitude(coord.latitude);
 			mWaypointLocation.setLongitude(coord.longitude);
+			coord = null;
 
 			int bearing = (int) location.bearingTo(mWaypointLocation);
 			int distance = (int) location.distanceTo(mWaypointLocation);

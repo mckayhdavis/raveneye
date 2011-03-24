@@ -15,27 +15,12 @@ public class Directions<T extends Waypoint> {
 	 */
 	private final Dictionary<T, T> mWaypoints = new Hashtable<T, T>();
 
-	private T mCurrentWaypoint;
+	private volatile T mPreviousWaypoint;
+	private volatile T mCurrentWaypoint;
 
 	public Directions(T start) {
+		mPreviousWaypoint = null;
 		mCurrentWaypoint = start;
-
-		populateWaypointList(start);
-	}
-
-	/*
-	 * Add all the way-points to the dictionary. We keep a dictionary of
-	 * way-points as well as the linked list so that we can reach any way-point
-	 * in O(1) time.
-	 */
-	private void populateWaypointList(T waypoint) {
-		while (waypoint != null) {
-			Log.d(TAG, waypoint.toString());
-
-			mWaypoints.put(waypoint, waypoint);
-
-			waypoint = (T) waypoint.next();
-		}
 	}
 
 	public Dictionary<T, T> getWaypoints() {
@@ -47,9 +32,26 @@ public class Directions<T extends Waypoint> {
 	}
 
 	public T nextWaypoint() {
-		mCurrentWaypoint = (T) mCurrentWaypoint.next();
+		T prevWaypoint = mPreviousWaypoint;
+		T nextWaypoint = null;
 
-		return mCurrentWaypoint;
+		mCurrentWaypoint.visit();
+
+		if (prevWaypoint != null) {
+			for (Waypoint waypoint : mCurrentWaypoint.getNeighbours()) {
+				if (!waypoint.isVisited() && prevWaypoint != waypoint) {
+					nextWaypoint = (T) waypoint;
+					break;
+				}
+			}
+			Log.d(TAG, "Got next waypoint");
+		} else {
+			mCurrentWaypoint = (T) mCurrentWaypoint.next();
+		}
+
+		mCurrentWaypoint = nextWaypoint;
+
+		return nextWaypoint;
 	}
 
 	public boolean selectWaypoint(T waypoint) {

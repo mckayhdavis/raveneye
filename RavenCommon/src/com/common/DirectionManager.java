@@ -1,21 +1,15 @@
 package com.common;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
-import android.os.Bundle;
+import java.util.HashSet;
 
 public abstract class DirectionManager<T extends Waypoint> {
 
 	public static final String TAG = "RealityActivity";
 
-	private List<DirectionObserver> mObservers = new ArrayList<DirectionObserver>(
+	private HashSet<DirectionObserver> mObservers = new HashSet<DirectionObserver>(
 			2); // Generally a low number of observers.
 
-	protected Directions<T> mDirections;
+	protected volatile Directions<T> mDirections;
 
 	public void setDirections(Directions<T> directions) {
 		mDirections = directions;

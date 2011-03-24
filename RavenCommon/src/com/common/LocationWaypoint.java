@@ -14,7 +14,7 @@ public class LocationWaypoint extends Waypoint {
 
 	@Override
 	public String toString() {
-		return coordinate.toString();
+		return "LocationWaypoint: " + coordinate.toString();
 	}
 
 }

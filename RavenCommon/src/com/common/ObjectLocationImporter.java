@@ -50,6 +50,6 @@ public class ObjectLocationImporter implements LocationImporter {
 
 		Log.d(TAG, "read graph to file: " + fileName + FILE_EXTENSION);
 
-		return waypoint;
+		return null;
 	}
 }

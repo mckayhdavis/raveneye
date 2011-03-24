@@ -15,10 +15,16 @@ public abstract class Waypoint implements Serializable {
 	private List<Waypoint> mNeighbours = new ArrayList<Waypoint>(4);
 	private Place mPlace = null;
 
+	public transient int id;
+
 	private boolean mVisited = false;
 
 	public int numberOfChildren() {
 		return mNeighbours.size();
+	}
+
+	public List<Waypoint> getNeighbours() {
+		return mNeighbours;
 	}
 
 	public Waypoint next(int index) {
@@ -35,7 +41,7 @@ public abstract class Waypoint implements Serializable {
 	public void addNext(Waypoint waypoint) {
 		mNeighbours.add(waypoint);
 
-		// waypoint.mNeighbours.add(this);
+		waypoint.mNeighbours.add(this);
 	}
 
 	public boolean isVisited() {
@@ -63,5 +69,20 @@ public abstract class Waypoint implements Serializable {
 	public Place getPlace() {
 		return mPlace;
 	}
+
+	/*
+	 * Serialization methods.
+	 */
+
+	// private void writeObject(ObjectOutputStream out) throws IOException {
+	// out.write.defaultWriteObject();
+	// }
+	//
+	// private void readObject(ObjectInputStream in) throws IOException,
+	// ClassNotFoundException {
+	// // our "pseudo-constructor"
+	// in.defaultReadObject();
+	// // now we are a "live" object again
+	// }
 
 }
