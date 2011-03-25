@@ -67,8 +67,8 @@ public class RealityOverlayView extends SensorView {
     
     private static final int HORIZONTAL_QUADRANTS = 8;
     private static final int HORIZONTAL_QUADRANT_ANGLE = 360 / HORIZONTAL_QUADRANTS;
-    private static final int VERTICAL_QUADRANTS = 2;
-    private static final int VERTICAL_QUADRANT_ANGLE = 360 / VERTICAL_QUADRANTS;
+    private static final int VERTICAL_QUADRANTS = 1;
+    private static final int VERTICAL_QUADRANT_ANGLE = 90 / VERTICAL_QUADRANTS;
     
     private int mCanvasWidth;
     private int mCanvasHeight;
@@ -169,17 +169,18 @@ public class RealityOverlayView extends SensorView {
                 // Rotate the canvas according to the device roll.
                 canvas.rotate(mRoll, mHorizontalTranslationCorrection,
                         mVerticalTranslationCorrection);
+                canvas.translate(mX, mY);
                 
                 /*
                  * Draw the generated bitmap. Account for wrap-around at North.
                  */
                 if (mX >= -mHorizontalTranslationCorrection) {
-                    canvas.drawBitmap(mBitmap, mX - mCanvasWidth, mY, null);
+                    canvas.drawBitmap(mBitmap, -mCanvasWidth, 0, null);
                 } else if (mX <= ((mWidth + mHorizontalTranslationCorrection) - mCanvasWidth)) {
-                    canvas.drawBitmap(mBitmap, mX + mCanvasWidth, mY, null);
+                    canvas.drawBitmap(mBitmap, mCanvasWidth, 0, null);
                 }
                 
-                canvas.drawBitmap(mBitmap, mX, mY, null);
+                canvas.drawBitmap(mBitmap, 0, 0, null);
             }
             
             mDisplayedBefore = true;
@@ -199,7 +200,7 @@ public class RealityOverlayView extends SensorView {
             mHeight = height;
             
             mHorizontalTranslationCorrection = width >> 1;
-            mVerticalTranslationCorrection = height >> 1;
+            // mVerticalTranslationCorrection = height >> 1;
             
             mCanvasWidth = width * HORIZONTAL_QUADRANTS;
             mCanvasHeight = height * VERTICAL_QUADRANTS;
@@ -231,7 +232,9 @@ public class RealityOverlayView extends SensorView {
             
             mX = (-(int) (values[0] * mFactorX))
                     + mHorizontalTranslationCorrection;
-            mY = -(int) (values[1] * mFactorY) - mVerticalTranslationCorrection;
+            // TODO: optimize statement:
+            mY = (int) ((mWidth * 0.5f)
+                    - (Math.abs((mWidth - mHeight) * (values[2] / 90))) - (values[1] * mFactorY));
             mRoll = -values[2];
         }
         
@@ -273,7 +276,7 @@ public class RealityOverlayView extends SensorView {
         final Paint placeTextPaint = mPlaceTextPaint;
         final int canvasHeight = canvas.getHeight();
         final int canvasWidth = canvas.getWidth();
-        final int horizon = canvasHeight >> 1;
+        final int horizon = 100;
         
         synchronized (this) {
             final Paint gridPaint = mGridPaint;
@@ -335,10 +338,6 @@ public class RealityOverlayView extends SensorView {
             Location currentLocation, PlaceOverlayWrapper placeWrapper,
             int canvasWidth, int canvasHeight, int horizon) {
         Place place = placeWrapper.place;
-        int width;
-        int height;
-        
-        int alpha = 0xff;
         
         final Coordinate placeCoordinate = place.coordinate;
         final Location placeLocation = new Location(currentLocation);
@@ -346,9 +345,6 @@ public class RealityOverlayView extends SensorView {
         placeLocation.setLongitude(placeCoordinate.longitude);
         
         if (placeLocation != null) {
-            int x;
-            int y;
-            
             float bearing = currentLocation.bearingTo(placeLocation);
             if (bearing < 0) {
                 bearing += 360;
@@ -365,26 +361,27 @@ public class RealityOverlayView extends SensorView {
              * Do some scaling (size).
              */
 
-            double factor = 0;
+            byte alpha;
+            double factor;
             if (distance >= 15000) {
                 factor = 0.1;
                 alpha = 0x55;
             } else {
                 factor = 1 - (distance / 20000);
-                alpha = (int) ((0xAA * (1 - (distance / 15000))) + 0x55);
+                alpha = (byte) ((0xAA * (1 - (distance / 15000))) + 0x55);
             }
             
-            width = (int) (mPlaceDiameter * factor);
-            height = (int) (mPlaceDiameter * factor);
+            int width = (int) (mPlaceDiameter * factor);
+            // height = (int) (mPlaceDiameter * factor);
             
-            placeWrapper.setDimensions(width, height); // cache the dimensions
+            placeWrapper.setDimensions(width, width); // cache the dimensions
             
             int halfWidth = (width / 2);
-            int halfHeight = (height / 2);
+            // int halfHeight = (height / 2);
             
-            x = (int) (bearing * mFactorX);
+            int x = (int) (bearing * mFactorX);
             int depth = (canvasHeight / 5);
-            y = (int) (horizon + (depth * factor));
+            int y = (int) (horizon + (depth * factor));
             
             // Add the place to the hash table.
             mPlacePositions.put(placeWrapper, new TouchPoint(x, y));

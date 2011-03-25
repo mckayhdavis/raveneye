@@ -10,6 +10,7 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
+import android.util.Log;
 
 /**
  * This class is responsible for interpreting the orientation of the device and ensuring smooth and
@@ -102,11 +103,9 @@ public class RealityOrientationListener implements SensorEventListener,
     }
     
     public void lightFilterValues(final float[] values) {
-        values[0] *= RAD_TO_DEG; // azimuth
+        values[0] = (values[0] * RAD_TO_DEG) + mDeclination; // azimuth
         values[1] *= RAD_TO_DEG; // pitch
         values[2] *= RAD_TO_DEG; // roll
-        
-        values[0] += mDeclination;
         
         // Convert the (-180,180] range to [0,360).
         if (values[0] < 0) {
@@ -117,7 +116,7 @@ public class RealityOrientationListener implements SensorEventListener,
     }
     
     public void filterValues(final float[] values) {
-        values[0] *= RAD_TO_DEG; // azimuth
+        values[0] = (values[0] * RAD_TO_DEG) + mDeclination; // azimuth
         values[1] *= RAD_TO_DEG; // pitch
         values[2] *= RAD_TO_DEG; // roll
         
@@ -150,31 +149,6 @@ public class RealityOrientationListener implements SensorEventListener,
         oldValues[0] = values[0];
         oldValues[1] = values[1];
         oldValues[2] = values[2];
-        
-        values[0] += mDeclination;
-        
-        // Convert the (-180,180] range to [0,360).
-        if (values[0] < -360) {
-            values[0] = 0;
-            
-            // TODO: Temporary fix (Sometimes the oldValues[0] is out of
-            // bounds).
-            oldValues[0] = 0;
-        } else if (values[0] < 0) {
-            values[0] += 360;
-        } else if (values[0] >= 720) {
-            values[0] = 0;
-            
-            // TODO: Temporary fix (Sometimes the oldValues[0] is out of
-            // bounds).
-            oldValues[0] = 0;
-        } else if (values[0] >= 360) {
-            values[0] -= 360;
-            
-            // TODO: Temporary fix (Sometimes the oldValues[0] is out of
-            // bounds).
-            oldValues[0] = 0;
-        }
     }
     
     public boolean hasLocation() {
