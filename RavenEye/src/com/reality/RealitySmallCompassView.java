@@ -19,19 +19,21 @@ public class RealitySmallCompassView extends SensorView {
 
 	public static final String TAG = RealityActivity.TAG;// "RealityCompassView";
 
-	private static final int PLACE_RADIUS = 3;
+	private static final int COMPASS_RADIUS = 60;
+	private static final int PLACE_RADIUS = 1;// (int) ((float) COMPASS_RADIUS /
+												// 12);
+	private static final int COMPASS_OFFSET = 10;
+
 	private final Paint mHeadingPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 	private final Paint mPlacePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
 	private float mOrientationValues[] = new float[3];
 
-	private static final int COMPASS_RADIUS = 50;
-	private int mCompassX;
-	private int mCompassY;
+	private int mCompassCenter;
 	private int mRadius;
 
-	final float RAD_TO_DEG = (float) (180.0f / Math.PI);
-	final float DEG_TO_RAD = (float) (Math.PI / 180.0f);
+	public static final float RAD_TO_DEG = (float) (180.0f / Math.PI);
+	public static final float DEG_TO_RAD = (float) (Math.PI / 180.0f);
 
 	private RectF oval;
 	private Canvas mCanvas = null;
@@ -44,20 +46,19 @@ public class RealitySmallCompassView extends SensorView {
 	public RealitySmallCompassView(Context context, AttributeSet attr) {
 		super(context, attr);
 
-		mHeadingPaint.setARGB(60, 61, 89, 171);
+		mHeadingPaint.setARGB(100, 255, 255, 255);
+		// mHeadingPaint.setARGB(60, 61, 89, 171);
 		mHeadingPaint.setStrokeWidth(20);
 
 		mPlacePaint.setARGB(255, 61, 89, 171);
-		mPlacePaint.setStrokeWidth(20);
+		mPlacePaint.setStrokeWidth(8);
+		mPlacePaint.setStyle(Paint.Style.FILL_AND_STROKE);
 	}
 
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-		int radius = COMPASS_RADIUS;
-		int diameter = radius * 2;
-		int center = radius;
-
-		mRadius = radius;
+		int diameter = COMPASS_RADIUS * 2;
+		mCompassCenter = (int) (diameter * 0.5f) + COMPASS_OFFSET;
 
 		// TODO: memory leak possible here
 		mBitmap = Bitmap.createBitmap(diameter, diameter,
@@ -65,56 +66,30 @@ public class RealitySmallCompassView extends SensorView {
 		final Canvas c = new Canvas(mBitmap);
 		mCanvas = c;
 
-		final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
-		p.setStyle(Style.FILL);
+		diameter -= 2;
 
-		radius = COMPASS_RADIUS - 1;
-		int actualWidth = (int) (radius * 0.25);
-		int strokeWidth = actualWidth;
-		int adjustWidth = (int) (strokeWidth / 2);
+		int radius = (int) (diameter * 0.5f);
+		int segment = (int) (radius * 0.25f);
 
-		int w1 = (int) (strokeWidth) + 2;
-		int x = center - w1;
-		int y = center + w1;
-		RectF oval3 = new RectF(x, x, y, y);
+		mRadius = radius;
 
-		p.setARGB(200, 200, 200, 200);
-		c.drawOval(oval3, p);
+		final Paint pFill = new Paint(Paint.ANTI_ALIAS_FLAG);
+		pFill.setStyle(Style.FILL);
+		pFill.setARGB(100, 100, 100, 100);
+		final Paint pStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+		pStroke.setStyle(Style.STROKE);
+		pStroke.setStrokeWidth(3.0f);
+		pStroke.setARGB(100, 255, 255, 255);
 
-		p.setStyle(Style.STROKE);
+		RectF oval3 = new RectF(4, 4, diameter, diameter);
+		c.drawOval(oval3, pFill);
 
-		p.setStrokeWidth(2);
-		p.setARGB(255, 50, 50, 50);
-		c.drawCircle(center, center, (int) radius, p);
-		// OUTER BLACK LINE
+		oval3 = new RectF(4, 4, diameter, diameter);
+		c.drawOval(oval3, pStroke);
 
-		p.setStrokeWidth(strokeWidth + 1);
-
-		radius -= adjustWidth;
-		p.setARGB(200, 255, 255, 255);
-		c.drawCircle(center, center, (int) radius, p);
-		// INNER WHITE
-
-		radius -= strokeWidth;
-		p.setARGB(200, 200, 200, 200);
-		c.drawCircle(center, center, (int) radius, p);
-		// INNER GRAY
-
-		radius -= strokeWidth;
-		p.setARGB(200, 255, 255, 255);
-		c.drawCircle(center, center, (int) radius, p);
-		// INNER WHITE
-
-		p.setStrokeWidth(0);
-		p.setStyle(Style.FILL);
-		p.setARGB(220, 100, 100, 100);
-		c.drawCircle(center, center, 3, p);
-
-		mCompassX = 11;
-		mCompassY = 11;
-		y = diameter + mCompassX - 1;
-		oval = new RectF(mCompassX, mCompassY, y, y);
-		RectF oval2 = new RectF(0, 0, diameter, diameter);
+		int y = diameter + COMPASS_OFFSET - 1;
+		oval = new RectF(13, 13, y + 1, y + 1);
+		// RectF oval2 = new RectF(0, 0, diameter, diameter);
 
 		// c.drawArc(oval2, -105, 30, true, p);
 
@@ -135,11 +110,10 @@ public class RealitySmallCompassView extends SensorView {
 				final float[] values = mOrientationValues;
 
 				// Rotate the canvas according to the device roll.
-				canvas.rotate(360 - values[0], mCompassX + mRadius, mCompassY
-						+ mRadius);
+				canvas.rotate(360 - values[0], mCompassCenter, mCompassCenter);
 
-				canvas.drawBitmap(mBitmap, mCompassX, mCompassY, null);
-				canvas.drawArc(oval, values[0] - 105, 30, true, mHeadingPaint);
+				canvas.drawArc(oval, values[0] - 112, 44, true, mHeadingPaint);
+				canvas.drawBitmap(mBitmap, COMPASS_OFFSET, COMPASS_OFFSET, null);
 			}
 		} else {
 			onSizeChanged(0, 0, 0, 0);

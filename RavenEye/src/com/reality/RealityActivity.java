@@ -181,9 +181,9 @@ public class RealityActivity extends Activity implements LocationListener,
 		Sensor msensor = mSensorManager
 				.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 		mSensorManager.registerListener(mOrientationListener, gsensor,
-				SensorManager.SENSOR_DELAY_GAME);
+				SensorManager.SENSOR_DELAY_FASTEST);
 		mSensorManager.registerListener(mOrientationListener, msensor,
-				SensorManager.SENSOR_DELAY_GAME);
+				SensorManager.SENSOR_DELAY_UI);
 
 		mSurface.setWillNotDraw(false); // draw automatically
 		mCompassView.setWillNotDraw(false); // draw automatically
@@ -384,7 +384,6 @@ public class RealityActivity extends Activity implements LocationListener,
 			} else {
 				dismissDirectionOverlay();
 			}
-
 			return true;
 		case R.id.directory:
 			onDirectoryClick(null);
@@ -479,10 +478,11 @@ public class RealityActivity extends Activity implements LocationListener,
 			break;
 		case DIALOG_DOWNLOADING_DIRECTIONS_FAILED:
 			builder = new AlertDialog.Builder(this);
-			builder.setTitle("Unable to load directions")
-					.setMessage("No directions were found.")
+			builder.setTitle("Unable to load directions!")
+					.setMessage(
+							"An error occured while trying to load the directions.")
 					.setCancelable(true)
-					.setNegativeButton("Close",
+					.setNegativeButton("Okay",
 							new DialogInterface.OnClickListener() {
 								public void onClick(DialogInterface dialog,
 										int id) {
@@ -733,6 +733,10 @@ public class RealityActivity extends Activity implements LocationListener,
 			Location location = mLocationListener.getLastKnownLocation();
 			if (location != null) {
 				mLocationListener.onLocationChanged(location);
+			} else {
+				// TODO: temporary for development purposes.
+				location = getInitialLocation();
+				mLocationListener.onLocationChanged(location);
 			}
 		}
 
@@ -776,11 +780,7 @@ public class RealityActivity extends Activity implements LocationListener,
 					startWaypoint = new XmlLocationImporter()
 							.readFromFile(DIRECTIONS_FILE_NAME);
 
-					Log.d(TAG, "Have waypoint");
-
 					directionManager = getDirections((LocationWaypoint) startWaypoint);
-
-					Log.d(TAG, "Have directions possibly");
 				} catch (IOException e) {
 					Toast.makeText(RealityActivity.this,
 							"Error reading from directions", Toast.LENGTH_LONG);
@@ -820,12 +820,6 @@ public class RealityActivity extends Activity implements LocationListener,
 				manager.setDirections(directions);
 
 				return manager;
-			} else {
-				runOnUiThread(new Runnable() {
-					public void run() {
-						showDialog(DIALOG_DOWNLOADING_DIRECTIONS_FAILED);
-					}
-				});
 			}
 			return null;
 		}
@@ -839,27 +833,22 @@ public class RealityActivity extends Activity implements LocationListener,
 				manager.setDirections(directions);
 
 				return manager;
-			} else {
-				runOnUiThread(new Runnable() {
-					public void run() {
-						showDialog(DIALOG_DOWNLOADING_DIRECTIONS_FAILED);
-					}
-				});
 			}
 			return null;
 		}
 
 		protected void onPostExecute(final DirectionManager directionManager) {
+			dismissDialog(DIALOG_LOADING_DIRECTIONS);
+
 			if (directionManager != null) {
 				if (mDirectionView == null) {
 					mDirectionView = (RealityDirectionView) ((ViewStub) findViewById(R.id.directions_stub))
 							.inflate();
 				} else {
 					mDirectionView.setVisibility(View.VISIBLE);
-					mDirectionView.setWillNotDraw(false);
 				}
+				mDirectionView.setWillNotDraw(false);
 
-				mDirectionsLabel.setText("...");
 				mDirectionsLabel.setVisibility(View.VISIBLE);
 
 				directionManager.registerObserver(mDirectionView);
@@ -869,10 +858,8 @@ public class RealityActivity extends Activity implements LocationListener,
 
 				registerDirectionManager(directionManager);
 			} else {
-				Log.d(TAG, "Directions not found.");
+				showDialog(DIALOG_DOWNLOADING_DIRECTIONS_FAILED);
 			}
-
-			dismissDialog(DIALOG_LOADING_DIRECTIONS);
 		}
 	}
 
