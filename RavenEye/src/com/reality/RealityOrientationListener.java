@@ -135,14 +135,6 @@ public class RealityOrientationListener implements SensorEventListener,
 			difference = Math.abs(values[i] - oldValues[i]);
 			if (difference > 180) {
 				difference = 360 - difference;
-
-				if (values[i] < 0) {
-					// Only the new azimuth is negative.
-					oldValues[i] -= 360;
-				} else {
-					// Only the old azimuth is negative.
-					oldValues[i] += 360;
-				}
 			}
 
 			difference /= 180;
