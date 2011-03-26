@@ -5,9 +5,12 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -36,15 +39,12 @@ import com.common.Place;
 
 public class PlacesListActivity extends ListActivity {
 
-	private ProgressDialog mProgressDialog = null;
+	public static final int DIALOG_LOADING = 0;
 
 	private ArrayList<Place> mBuildings = new ArrayList<Place>();
 	private ArrayList<Place> mRestaurants = new ArrayList<Place>();
 	private HashSet<Place> mDownloadedBuildings = new HashSet<Place>();
 	private HashSet<Place> mDownloadedRestaurants = new HashSet<Place>();
-
-	private LinearLayout mLoadingPanel;
-	private TextView mLoadingText;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -58,9 +58,6 @@ public class PlacesListActivity extends ListActivity {
 
 		registerForContextMenu(getListView());
 
-		mLoadingPanel = (LinearLayout) findViewById(R.id.hidden_message);
-		mLoadingText = (TextView) findViewById(R.id.hidden_message_text);
-
 		onRefreshClick(null);
 	}
 
@@ -69,29 +66,21 @@ public class PlacesListActivity extends ListActivity {
 		super.onResume();
 	}
 
-	private void showLoadingPanel(CharSequence text) {
-		int animResource, visibility;
-		if (text != null) {
-			// animResource = R.anim.top_slide_down;
-			visibility = View.VISIBLE;
+	/*
+	 * Dialog methods.
+	 */
 
-			mLoadingText.setText(text);
-		} else {
-			// animResource = R.anim.top_slide_up;
-			visibility = View.GONE;
+	protected Dialog onCreateDialog(int id) {
+		Dialog dialog;
+		switch (id) {
+		case DIALOG_LOADING:
+			dialog = ProgressDialog.show(this, null, "Loading. Please wait...");
+			// dialog.setCancelable(true);
+			break;
+		default:
+			dialog = null;
 		}
-
-		// If the panel's current visibility is the same as the desired
-		// visibility, return and do not show the translate animation.
-		if (mLoadingPanel.getVisibility() == visibility) {
-			return;
-		}
-
-		// Start the translate animation.
-		// Animation anim = AnimationUtils.loadAnimation(this, animResource);
-		// mLoadingPanel.startAnimation(anim);
-		mLoadingPanel.setVisibility(visibility); // force persistence on the
-													// translation
+		return dialog;
 	}
 
 	private Runnable mViewPlaces = new Runnable() {
@@ -126,7 +115,7 @@ public class PlacesListActivity extends ListActivity {
 			}
 
 			mAdapter.notifyDataSetChanged();
-			showLoadingPanel(null);
+			dismissDialog(DIALOG_LOADING);
 		}
 
 	};
@@ -505,7 +494,7 @@ public class PlacesListActivity extends ListActivity {
 	}
 
 	public void onRefreshClick(View v) {
-		showLoadingPanel("Loading...");
+		showDialog(DIALOG_LOADING);
 
 		Thread thread = new Thread(null, mViewPlaces, "MagentoBackground");
 		thread.start();

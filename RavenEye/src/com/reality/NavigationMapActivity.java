@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -23,10 +24,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.common.Coordinate;
@@ -41,6 +38,8 @@ import com.google.android.maps.OverlayItem;
 
 public class NavigationMapActivity extends MapActivity {
 
+	public static final int DIALOG_LOADING = 0;
+
 	private MapController mMapController;
 	private MapView mMapView;
 	private MyLocationOverlay mMyLocationOverlay;
@@ -48,10 +47,9 @@ public class NavigationMapActivity extends MapActivity {
 	private LocationManager mLocationManager;
 	private String mBestProvider;
 
-	private LinearLayout mLoadingPanel;
-	private TextView mLoadingText;
+	private final List<Place> mPlaces = new ArrayList<Place>();
 
-	private List<Place> mPlaces = new ArrayList<Place>();
+	private boolean mUseLocationForPosition = true;
 
 	// Carleton University GPS coordinates.
 	public static final GeoPoint DEFAULT_LOCATION = new GeoPoint(45386018,
@@ -60,8 +58,6 @@ public class NavigationMapActivity extends MapActivity {
 
 	public static final int MIN_TIME_BETWEEN_LOCATION_UPDATES = 1000;
 	public static final int MIN_DISTANCE_BETWEEN_LOCATION_UPDATES = 3;
-
-	private ProgressDialog mLoadingDialog;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -85,9 +81,6 @@ public class NavigationMapActivity extends MapActivity {
 		mMapOverlays.add(mMyLocationOverlay);
 		mMapOverlays.add(gestureOverlay);
 
-		mLoadingPanel = (LinearLayout) findViewById(R.id.hidden_message);
-		mLoadingText = (TextView) findViewById(R.id.hidden_message_text);
-
 		/*
 		 * Passed in objects.
 		 */
@@ -103,33 +96,41 @@ public class NavigationMapActivity extends MapActivity {
 			}
 		} else {
 			places = new Object[12];
-			
+
 			int i = 0;
-			places[i++] = new Place("", "", "", new Coordinate((float)45283846 / 1000000,(float)-76020133 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate((float)45283768 / 1000000,(float)-76020078 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate((float)45283794 / 1000000,(float)-76020057 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate((float)45283765 / 1000000,(float)-76020028 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate((float)45283739 / 1000000,(float)-76020005 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate((float)45283711 / 1000000,(float)-76019998 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate((float)45283677 / 1000000,(float)-76019982 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate((float)45283641 / 1000000,(float)-76019965 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate((float)45283609 / 1000000,(float)-76019938 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate((float)45283583 / 1000000,(float)-76019923 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate((float)45283555 / 1000000,(float)-76019954 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate((float)45283544 / 1000000,(float)-76019995 / 1000000));
+			places[i++] = new Place("", "", "", new Coordinate(
+					(float) 45283846 / 1000000, (float) -76020133 / 1000000));
+			places[i++] = new Place("", "", "", new Coordinate(
+					(float) 45283768 / 1000000, (float) -76020078 / 1000000));
+			places[i++] = new Place("", "", "", new Coordinate(
+					(float) 45283794 / 1000000, (float) -76020057 / 1000000));
+			places[i++] = new Place("", "", "", new Coordinate(
+					(float) 45283765 / 1000000, (float) -76020028 / 1000000));
+			places[i++] = new Place("", "", "", new Coordinate(
+					(float) 45283739 / 1000000, (float) -76020005 / 1000000));
+			places[i++] = new Place("", "", "", new Coordinate(
+					(float) 45283711 / 1000000, (float) -76019998 / 1000000));
+			places[i++] = new Place("", "", "", new Coordinate(
+					(float) 45283677 / 1000000, (float) -76019982 / 1000000));
+			places[i++] = new Place("", "", "", new Coordinate(
+					(float) 45283641 / 1000000, (float) -76019965 / 1000000));
+			places[i++] = new Place("", "", "", new Coordinate(
+					(float) 45283609 / 1000000, (float) -76019938 / 1000000));
+			places[i++] = new Place("", "", "", new Coordinate(
+					(float) 45283583 / 1000000, (float) -76019923 / 1000000));
+			places[i++] = new Place("", "", "", new Coordinate(
+					(float) 45283555 / 1000000, (float) -76019954 / 1000000));
+			places[i++] = new Place("", "", "", new Coordinate(
+					(float) 45283544 / 1000000, (float) -76019995 / 1000000));
 		}
 		new DownloadPlacesTask().execute(places);
 
-		mLoadingDialog = ProgressDialog.show(this, "",
-				"Loading. Please wait...", true);
+		showDialog(DIALOG_LOADING);
 	}
 
 	@Override
 	public void onStart() {
 		super.onStart();
-
-		// mMapController.animateTo(DEFAULT_LOCATION);
-		// mMapController.setZoom(DEFAULT_ZOOM_LEVEL);
 	}
 
 	@Override
@@ -145,8 +146,6 @@ public class NavigationMapActivity extends MapActivity {
 		mLocationManager.requestLocationUpdates(mBestProvider,
 				MIN_TIME_BETWEEN_LOCATION_UPDATES,
 				MIN_DISTANCE_BETWEEN_LOCATION_UPDATES, mLocationListener);
-
-		showLoadingPanel(null);
 	}
 
 	@Override
@@ -203,8 +202,9 @@ public class NavigationMapActivity extends MapActivity {
 			runOnUiThread(new Runnable() {
 
 				public void run() {
-					mLoadingDialog.dismiss();
-					mLoadingDialog = null;
+					dismissDialog(DIALOG_LOADING);
+
+					onMyLocationClick(null);
 				}
 
 			});
@@ -218,11 +218,13 @@ public class NavigationMapActivity extends MapActivity {
 	private LocationListener mLocationListener = new LocationListener() {
 
 		public void onLocationChanged(Location location) {
-			// Update the map to the current location.
-			GeoPoint loc = new GeoPoint(
-					(int) (location.getLatitude() * 1000000),
-					(int) (location.getLongitude() * 1000000));
-			mMapController.animateTo(loc);
+			if (mUseLocationForPosition) {
+				// Update the map to the current location.
+				GeoPoint loc = new GeoPoint(
+						(int) (location.getLatitude() * 1000000),
+						(int) (location.getLongitude() * 1000000));
+				mMapController.animateTo(loc);
+			}
 		}
 
 		public void onProviderDisabled(String provider) {
@@ -305,7 +307,10 @@ public class NavigationMapActivity extends MapActivity {
 
 		public boolean onScroll(MotionEvent e1, MotionEvent e2,
 				float distanceX, float distanceY) {
-			// TODO Auto-generated method stub
+			// The user has scrolled, so we don't want location updates to move
+			// the map position.
+			mUseLocationForPosition = false;
+
 			return false;
 		}
 
@@ -321,29 +326,21 @@ public class NavigationMapActivity extends MapActivity {
 
 	};
 
-	private void showLoadingPanel(CharSequence text) {
-		int animResource, visibility;
-		if (text != null) {
-			animResource = R.anim.top_slide_down;
-			visibility = View.VISIBLE;
+	/*
+	 * Dialog methods.
+	 */
 
-			mLoadingText.setText(text);
-		} else {
-			animResource = R.anim.top_slide_up;
-			visibility = View.GONE;
+	protected Dialog onCreateDialog(int id) {
+		Dialog dialog;
+		switch (id) {
+		case DIALOG_LOADING:
+			dialog = ProgressDialog.show(this, null, "Loading. Please wait...");
+			// dialog.setCancelable(true);
+			break;
+		default:
+			dialog = null;
 		}
-
-		// If the panel's current visibility is the same as the desired
-		// visibility, return and do not show the translate animation.
-		if (mLoadingPanel.getVisibility() == visibility) {
-			return;
-		}
-
-		// Start the translate animation.
-		Animation anim = AnimationUtils.loadAnimation(this, animResource);
-		mLoadingPanel.startAnimation(anim);
-		mLoadingPanel.setVisibility(visibility); // force persistence on the
-													// translation
+		return dialog;
 	}
 
 	@Override
@@ -375,8 +372,6 @@ public class NavigationMapActivity extends MapActivity {
 	}
 
 	public void onMyLocationClick(View v) {
-		Toast.makeText(this, "Finding my location...", Toast.LENGTH_SHORT);
-
 		Location location = mLocationManager
 				.getLastKnownLocation(mBestProvider);
 
@@ -384,6 +379,8 @@ public class NavigationMapActivity extends MapActivity {
 				(int) (location.getLongitude() * 1000000));
 		mMapController.animateTo(loc);
 		mMapController.setZoom(DEFAULT_ZOOM_LEVEL);
+
+		mUseLocationForPosition = true;
 	}
 
 	public void onSearchClick(View v) {
@@ -395,16 +392,12 @@ public class NavigationMapActivity extends MapActivity {
 	}
 
 	public void onDirectionsClick(View v) {
-		showLoadingPanel("Loading directions...");
+		showDialog(DIALOG_LOADING);
 
 		Intent intent = new Intent(this, RealityActivity.class);
 		intent.putExtra(Place.class.toString(), mPlaces.toArray());
 
 		this.startActivity(intent);
-	}
-
-	public void onLayersClick(View v) {
-		showLoadingPanel(null);
 	}
 
 	public void onClearMapClick(View v) {
