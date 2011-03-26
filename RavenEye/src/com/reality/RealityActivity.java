@@ -556,9 +556,11 @@ public class RealityActivity extends Activity implements LocationListener,
 			} else {
 				view.setVisibility(View.GONE);
 			}
+
+			return true;
 		}
 
-		return true;
+		return false;
 	}
 
 	/*

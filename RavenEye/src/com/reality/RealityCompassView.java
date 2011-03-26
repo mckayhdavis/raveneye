@@ -38,7 +38,7 @@ public class RealityCompassView extends SensorView {
 	public static final float DEG_TO_RAD = (float) (Math.PI / 180.0f);
 
 	private RectF mViewPointOval;
-	private Canvas mCanvas = null;
+	protected Canvas mCanvas = null;
 	private Bitmap mBackgroundBitmap = null;
 	private Bitmap mBitmap = null;
 
@@ -53,13 +53,19 @@ public class RealityCompassView extends SensorView {
 		mPlacePaint.setARGB(255, 61, 89, 171);
 		mPlacePaint.setStrokeWidth(8);
 		mPlacePaint.setStyle(Paint.Style.FILL_AND_STROKE);
+
+		setWillNotDraw(true);
 	}
 
-	protected void setRadius(int radius) throws IllegalArgumentException {
-		if (radius < 10) {
-			throw new IllegalArgumentException("Radius must be >= 10");
-		}
-		mCompassRadius = radius;
+	@Override
+	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+		int parentWidth = MeasureSpec.getSize(widthMeasureSpec);
+		int parentHeight = MeasureSpec.getSize(heightMeasureSpec);
+
+		// super.onMeasure(parentWidth - COMPASS_OFFSET, parentHeight
+		// - COMPASS_OFFSET);
+
+		this.setMeasuredDimension(parentWidth, parentHeight);
 	}
 
 	@Override
@@ -83,18 +89,12 @@ public class RealityCompassView extends SensorView {
 						COMPASS_VIEW_ANGLE, true, mHeadingPaint);
 				canvas.drawBitmap(mBitmap, COMPASS_OFFSET, COMPASS_OFFSET, null);
 			}
-		} else {
-			onSizeChanged(0, 0, 0, 0);
 		}
 	}
 
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-		if (mCompassRadius < 0) {
-			setRadius((int) (w >> 1) - COMPASS_OFFSET);
-		}
-
-		int diameter = mCompassRadius << 1;
+		int diameter = w - COMPASS_OFFSET;
 		mCompassCenter = (int) (diameter >> 1) + COMPASS_OFFSET;
 
 		// TODO: memory leak possible here

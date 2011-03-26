@@ -10,7 +10,6 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
-import android.util.Log;
 
 /**
  * This class is responsible for interpreting the orientation of the device and
@@ -91,8 +90,8 @@ public class RealityOrientationListener implements SensorEventListener,
 			filterValues(values); // filter sensor noise
 			// lightFilterValues(values); // filter sensor noise
 
-			Log.d(TAG, "(" + values[0] + "," + values[1] + "," + values[2]
-					+ ") " + event.sensor.getResolution());
+			// Log.d(TAG, "(" + values[0] + "," + values[1] + "," + values[2]
+			// + ") " + event.sensor.getResolution());
 
 			/*
 			 * Broadcast to the observers.
@@ -111,8 +110,6 @@ public class RealityOrientationListener implements SensorEventListener,
 		// Convert the (-180,180] range to [0,360).
 		if (values[0] < 0) {
 			values[0] += 360;
-		} else if (values[0] >= 360) {
-			values[0] -= 360;
 		}
 	}
 
@@ -135,6 +132,14 @@ public class RealityOrientationListener implements SensorEventListener,
 			difference = Math.abs(values[i] - oldValues[i]);
 			if (difference > 180) {
 				difference = 360 - difference;
+
+				if (values[i] < 0) {
+					// Only the new azimuth is negative.
+					oldValues[i] -= 360;
+				} else {
+					// Only the old azimuth is negative.
+					oldValues[i] += 360;
+				}
 			}
 
 			difference /= 180;
