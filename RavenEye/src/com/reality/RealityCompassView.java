@@ -22,7 +22,6 @@ public class RealityCompassView extends SensorView {
 	public static final String TAG = RealityActivity.TAG;// "RealityCompassView";
 
 	private static final int COMPASS_VIEW_ANGLE = 50;
-	private static final int PLACE_RADIUS = 1;
 	private static final int COMPASS_OFFSET = 10;
 
 	private final Paint mHeadingPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -30,16 +29,14 @@ public class RealityCompassView extends SensorView {
 
 	private float mOrientationValues[] = new float[3];
 
-	private int mCompassCenter;
-	private int mCompassRadius = -1;
 	private int mRadius;
+	private float mPlaceRadius;
 
 	public static final float RAD_TO_DEG = (float) (180.0f / Math.PI);
 	public static final float DEG_TO_RAD = (float) (Math.PI / 180.0f);
 
 	private RectF mViewPointOval;
 	protected Canvas mCanvas = null;
-	private Bitmap mBackgroundBitmap = null;
 	private Bitmap mBitmap = null;
 
 	private List<PlaceOverlayWrapper> mCachedPlaces = null;
@@ -47,12 +44,13 @@ public class RealityCompassView extends SensorView {
 	public RealityCompassView(Context context, AttributeSet attr) {
 		super(context, attr);
 
-		mHeadingPaint.setARGB(100, 61, 89, 171);
+		mHeadingPaint.setARGB(50, 255, 255, 255);
+		// mHeadingPaint.setARGB(100, 61, 89, 171);
 		mHeadingPaint.setStrokeWidth(20);
 
-		mPlacePaint.setARGB(255, 61, 89, 171);
-		mPlacePaint.setStrokeWidth(8);
-		mPlacePaint.setStyle(Paint.Style.FILL_AND_STROKE);
+		mPlacePaint.setARGB(255, 220, 220, 220);
+		// mPlacePaint.setARGB(255, 61, 89, 171);
+		mPlacePaint.setStyle(Paint.Style.FILL);
 
 		setWillNotDraw(true);
 	}
@@ -61,9 +59,6 @@ public class RealityCompassView extends SensorView {
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 		int parentWidth = MeasureSpec.getSize(widthMeasureSpec);
 		int parentHeight = MeasureSpec.getSize(heightMeasureSpec);
-
-		// super.onMeasure(parentWidth - COMPASS_OFFSET, parentHeight
-		// - COMPASS_OFFSET);
 
 		this.setMeasuredDimension(parentWidth, parentHeight);
 	}
@@ -80,56 +75,28 @@ public class RealityCompassView extends SensorView {
 				final float[] values = mOrientationValues;
 
 				// Rotate the canvas according to the device roll.
-				canvas.rotate(360 - values[0] - values[2], mCompassCenter,
-						mCompassCenter);
+				canvas.rotate(360 - values[0] - values[2], mRadius, mRadius);
 
-				canvas.drawBitmap(mBackgroundBitmap, COMPASS_OFFSET,
-						COMPASS_OFFSET, null);
 				canvas.drawArc(mViewPointOval, values[0] - 115,
 						COMPASS_VIEW_ANGLE, true, mHeadingPaint);
-				canvas.drawBitmap(mBitmap, COMPASS_OFFSET, COMPASS_OFFSET, null);
+				canvas.drawBitmap(mBitmap, 0, 0, null);
 			}
 		}
 	}
 
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-		int diameter = w - COMPASS_OFFSET;
-		mCompassCenter = (int) (diameter >> 1) + COMPASS_OFFSET;
+		mPlaceRadius = w * 0.02f;
+		mRadius = (int) (w >> 1);
 
 		// TODO: memory leak possible here
-		mBackgroundBitmap = Bitmap.createBitmap(diameter, diameter,
-				Bitmap.Config.ARGB_4444);
-		mBitmap = Bitmap.createBitmap(diameter, diameter,
-				Bitmap.Config.ARGB_4444);
-		final Canvas c = new Canvas(mBackgroundBitmap);
-
-		diameter -= 2;
-		int radius = (int) (diameter >> 1);
-
-		mRadius = radius;
-
-		final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-		RectF oval3 = new RectF(4, 4, diameter, diameter);
-		paint.setStyle(Style.STROKE);
-		paint.setStrokeWidth(3.0f);
-		paint.setARGB(100, 0, 0, 0);
-		c.drawOval(oval3, paint);
-
-		paint.setStyle(Style.FILL);
-		paint.setARGB(200, 255, 255, 255);
-		c.drawOval(oval3, paint);
-
-		int y = diameter + COMPASS_OFFSET - 1;
-		mViewPointOval = new RectF(13, 13, y + 1, y + 1);
+		mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_4444);
+		mCanvas = new Canvas(mBitmap);
+		mViewPointOval = new RectF(2, 2, w - 2, h - 2);
 
 		super.onSizeChanged(w, h, oldw, oldh);
 
 		Log.d(TAG, "onSizeChanged() - Bitmap and canvas created.");
-
-		c.setBitmap(mBitmap);
-		mCanvas = c;
 	}
 
 	public synchronized void onSensorChanged(SensorEvent event) {
@@ -152,7 +119,7 @@ public class RealityCompassView extends SensorView {
 			mCanvas.drawColor(Color.TRANSPARENT, Mode.CLEAR);
 
 			if (places.size() > 0) {
-				radius = mRadius - PLACE_RADIUS;
+				radius = (int) (mRadius - 1);
 
 				Place place;
 				// Find the farthest place in terms of distance.
@@ -218,8 +185,8 @@ public class RealityCompassView extends SensorView {
 					}
 
 					synchronized (this) {
-						mCanvas.drawCircle((int) x + PLACE_RADIUS, (int) y
-								+ PLACE_RADIUS, PLACE_RADIUS, paint);
+						mCanvas.drawCircle((int) x + mPlaceRadius, (int) y
+								+ mPlaceRadius, mPlaceRadius, paint);
 					}
 				}
 			}

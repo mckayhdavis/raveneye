@@ -58,7 +58,11 @@ public class PlacesActivity extends Activity {
 				v = (TextView) findViewById(R.id.building_code);
 				v.setText(place.buildingCode);
 				v = (TextView) findViewById(R.id.distance);
-				v.setText(Place.getDistanceString(place.distance));
+				if (place.distance >= 0) {
+					v.setText(Place.getDistanceString(place.distance));
+				} else {
+					v.setText("Unknown");
+				}
 				v = (TextView) findViewById(R.id.reviews);
 				RatingBar rating = (RatingBar) findViewById(R.id.rating);
 

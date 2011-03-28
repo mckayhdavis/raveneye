@@ -44,7 +44,7 @@ public class RealityOverlayView extends SensorView {
 	public static final String[] HEADING_STRING = { NORTH, NORTH_EAST, EAST,
 			SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST };
 
-	private static final boolean SHOW_GRID = false;
+	// private static final boolean SHOW_GRID = false;
 
 	public static final String TAG = RealityActivity.TAG;// "RealityOverlayView";
 
@@ -220,7 +220,7 @@ public class RealityOverlayView extends SensorView {
 			mVerticalTranslationCorrection = height >> 1;
 
 			mCanvasWidth = width * HORIZONTAL_QUADRANTS;
-			mCanvasHeight = height * VERTICAL_QUADRANTS;
+			mCanvasHeight = (int) (mVerticalTranslationCorrection * VERTICAL_QUADRANTS);
 
 			mNegativeHorizontalTranslationCorrection = width
 					+ mHorizontalTranslationCorrection - mCanvasWidth;
@@ -352,15 +352,15 @@ public class RealityOverlayView extends SensorView {
 			canvas.drawColor(Color.TRANSPARENT, Mode.CLEAR);
 
 			drawGrid(canvas);
+		}
 
-			int len = mPlaceOverlays.size();
+		int len = mPlaceOverlays.size();
 
-			Log.d(TAG, "remapOverlays() - Mapped " + len + " overlays.");
+		Log.d(TAG, "remapOverlays() - Mapped " + len + " overlays.");
 
-			for (int i = 0; i < len; ++i) {
-				drawPlace(canvas, placePaint, placeTextPaint, location,
-						mPlaceOverlays.get(i), HORIZON);
-			}
+		for (int i = 0; i < len; ++i) {
+			drawPlace(canvas, placePaint, placeTextPaint, location,
+					mPlaceOverlays.get(i), HORIZON);
 		}
 	}
 
@@ -395,10 +395,10 @@ public class RealityOverlayView extends SensorView {
 			double factor;
 			if (distance >= 15000) {
 				factor = 0.1;
-				alpha = 0x55;
+				alpha = 0x2a;
 			} else {
-				factor = 1 - (distance / 20000);
-				alpha = (byte) ((0xAA * (1 - (distance / 15000))) + 0x55);
+				factor = 1 - (distance / 15000);
+				alpha = (byte) ((0xa8 * (1 - (distance / 20000))));
 			}
 
 			int width = (int) (mPlaceDiameter * factor);
@@ -410,11 +410,9 @@ public class RealityOverlayView extends SensorView {
 			// int halfHeight = (height / 2);
 
 			int x = (int) (bearing * mFactorX);
-			int depth = (mCanvasHeight / 5);
-			int y = (int) (horizon + (depth * factor));
+			int y = (int) (((mCanvasHeight - halfWidth) * factor));
 
-			// Add the place to the hash table.
-			mPlacePositions.put(placeWrapper, new TouchPoint(x, y));
+			textPaint.setTextSize(10 + (float) (20.0f * factor));
 
 			/*
 			 * Draw on the bitmap.
@@ -437,46 +435,63 @@ public class RealityOverlayView extends SensorView {
 			int right = x + halfWidth;
 			// int bottom = y + halfHeight;
 
-			// TODO: The text is cutoff at North if the actual shape is not
-			// crossing North. (long place names are therefore cut off at North.
-			if (left < 0) {
-				// Draw on the left side of the canvas with some overlap across
-				// north. Draw the right side of the canvas as well to ensure
-				// wrap-around.
-				// canvas.drawRect(canvasWidth + left, top, canvasWidth, bottom,
-				// paint);
-				// canvas.drawRect(0, top, right, bottom, paint);
-				canvas.drawCircle(x, y, halfWidth, paint);
-				canvas.drawCircle(mCanvasWidth + x, y, halfWidth, paint);
+			synchronized (this) {
+				// Add the place to the hash table.
+				TouchPoint tPoint = mPlacePositions.get(placeWrapper);
+				if (tPoint != null) {
+					tPoint.x = x;
+					tPoint.y = y;
+				} else {
+					mPlacePositions.put(placeWrapper, new TouchPoint(x, y));
+				}
 
-				canvas.drawText(place.name, x, y, textPaint);
-				canvas.drawText(distanceString, x, y + 20, textPaint);
+				// TODO: The text is cutoff at North if the actual shape is not
+				// crossing North. (long place names are therefore cut off at
+				// North.
+				if (left < 0) {
+					// Draw on the left side of the canvas with some overlap
+					// across
+					// north. Draw the right side of the canvas as well to
+					// ensure
+					// wrap-around.
+					// canvas.drawRect(canvasWidth + left, top, canvasWidth,
+					// bottom,
+					// paint);
+					// canvas.drawRect(0, top, right, bottom, paint);
+					canvas.drawCircle(x, y, halfWidth, paint);
+					canvas.drawCircle(mCanvasWidth + x, y, halfWidth, paint);
 
-				canvas.drawText(place.name, mCanvasWidth + x, y, textPaint);
-				canvas.drawText(distanceString, mCanvasWidth + x, y + 20,
-						textPaint);
-			} else if (right > mCanvasWidth) {
-				// Draw on the right side of the canvas with some overlap across
-				// north. Draw the left side of the canvas as well to ensure
-				// wrap-around.
-				// canvas.drawRect(0, top, right - canvasWidth, bottom, paint);
-				// canvas.drawRect(left, top, canvasWidth, bottom, paint);
-				canvas.drawCircle(x, y, halfWidth, paint);
-				canvas.drawCircle(x - mCanvasWidth, y, halfWidth, paint);
+					canvas.drawText(place.name, x, y, textPaint);
+					canvas.drawText(distanceString, x, y + 20, textPaint);
 
-				canvas.drawText(place.name, x, y, textPaint);
-				canvas.drawText(distanceString, x, y + 20, textPaint);
+					canvas.drawText(place.name, mCanvasWidth + x, y, textPaint);
+					canvas.drawText(distanceString, mCanvasWidth + x, y + 20,
+							textPaint);
+				} else if (right > mCanvasWidth) {
+					// Draw on the right side of the canvas with some overlap
+					// across
+					// north. Draw the left side of the canvas as well to ensure
+					// wrap-around.
+					// canvas.drawRect(0, top, right - canvasWidth, bottom,
+					// paint);
+					// canvas.drawRect(left, top, canvasWidth, bottom, paint);
+					canvas.drawCircle(x, y, halfWidth, paint);
+					canvas.drawCircle(x - mCanvasWidth, y, halfWidth, paint);
 
-				canvas.drawText(place.name, x - mCanvasWidth, y, textPaint);
-				canvas.drawText(distanceString, x - mCanvasWidth, y + 20,
-						textPaint);
-			} else {
-				// Draw the canvas normally.
-				// canvas.drawRect(left, top, right, bottom, paint);
-				canvas.drawCircle(x, y, halfWidth, paint);
+					canvas.drawText(place.name, x, y, textPaint);
+					canvas.drawText(distanceString, x, y + 20, textPaint);
 
-				canvas.drawText(place.name, x, y, textPaint);
-				canvas.drawText(distanceString, x, y + 20, textPaint);
+					canvas.drawText(place.name, x - mCanvasWidth, y, textPaint);
+					canvas.drawText(distanceString, x - mCanvasWidth, y + 20,
+							textPaint);
+				} else {
+					// Draw the canvas normally.
+					// canvas.drawRect(left, top, right, bottom, paint);
+					canvas.drawCircle(x, y, halfWidth, paint);
+
+					canvas.drawText(place.name, x, y, textPaint);
+					canvas.drawText(distanceString, x, y + 20, textPaint);
+				}
 			}
 
 			// Log.d(TAG, "Draw place: " + place + " at (" + left + "px," +
@@ -595,8 +610,8 @@ public class RealityOverlayView extends SensorView {
 
 		public static final int DEFAULT_PROXIMITY_RADIUS = 100;
 
-		public final int x;
-		public final int y;
+		public int x;
+		public int y;
 
 		public TouchPoint(int x, int y) {
 			this.x = x;

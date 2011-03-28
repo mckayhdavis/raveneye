@@ -84,6 +84,7 @@ public class RealityActivity extends Activity implements LocationListener,
 	private RealitySmallCompassView mCompassView;
 	private RealityDirectionView mDirectionView = null;
 
+	private TextView mRealityStatusLabel;
 	private TextView mStatusLabel;
 	private TextView mDirectionsLabel;
 
@@ -120,6 +121,7 @@ public class RealityActivity extends Activity implements LocationListener,
 		 */
 		mSurface = (RealityOverlayView) findViewById(R.id.surface);
 		mCompassView = (RealitySmallCompassView) findViewById(R.id.compass);
+		mRealityStatusLabel = (TextView) findViewById(R.id.reality_status_output);
 		mStatusLabel = (TextView) findViewById(R.id.status_output);
 		mDirectionsLabel = (TextView) findViewById(R.id.directions_output);
 
@@ -249,73 +251,6 @@ public class RealityActivity extends Activity implements LocationListener,
 		mSurface.addAllOverlays(places);
 	}
 
-	private final List<Place> getPlacesTest() {
-		List<Place> places = new ArrayList<Place>();
-
-		Coordinate loc1 = new Coordinate();
-		loc1.setLatitude(45.309485);
-		loc1.setLongitude(-75.90909);
-		Coordinate loc2 = new Coordinate();
-		loc2.setLatitude(45.296928);
-		loc2.setLongitude(-75.9272);
-		Coordinate loc3 = new Coordinate();
-		loc3.setLatitude(45.294332);
-		loc3.setLongitude(-75.901537);
-		Coordinate loc4 = new Coordinate();
-		loc4.setLatitude(45.425203);
-		loc4.setLongitude(-75.700092);
-		Coordinate loc5 = new Coordinate();
-		loc5.setLatitude(45.382575);
-		loc5.setLongitude(-75.699352);
-		Coordinate loc6 = new Coordinate();
-		loc6.setLatitude(45.346354);
-		loc6.setLongitude(-75.893555);
-		Coordinate loc7 = new Coordinate();
-		loc7.setLatitude(45.304595);
-		loc7.setLongitude(-75.811844);
-		Coordinate loc8 = new Coordinate();
-		loc8.setLatitude(45.252655);
-		loc8.setLongitude(-75.890808);
-		Coordinate loc9 = new Coordinate();
-		loc9.setLatitude(45.304112);
-		loc9.setLongitude(-75.968742);
-		Coordinate loc10 = new Coordinate();
-		loc10.setLatitude(45.304248);
-		loc10.setLongitude(-75.892664);
-		Coordinate loc11 = new Coordinate();
-		loc11.setLatitude(48.951366);
-		loc11.setLongitude(-75.849609);
-		Coordinate loc12 = new Coordinate();
-		loc12.setLatitude(45.163642);
-		loc12.setLongitude(-75.417023);
-
-		Place place1 = new Place("AMC", "description", "NA", loc1);
-		Place place2 = new Place("ScotiaBank Place", "description", "NA", loc2);
-		Place place3 = new Place("Walter Baker Park", "description", "NA", loc3);
-		Place place4 = new Place("Parliament", "description", "NA", loc4);
-		Place place5 = new Place("Dunton Tower", "description", "NA", loc5);
-		Place place6 = new Place("North", "description", "NA", loc6);
-		Place place7 = new Place("East", "description", "NA", loc7);
-		Place place8 = new Place("South", "description", "NA", loc8);
-		Place place9 = new Place("West", "description", "NA", loc9);
-		Place place10 = new Place("Doug's", "description", "NA", loc10);
-		Place place12 = new Place("Random place", "description", "NA", loc12);
-
-		places.add(place1);
-		places.add(place2);
-		places.add(place3);
-		places.add(place4);
-		places.add(place5);
-		places.add(place6);
-		places.add(place7);
-		places.add(place8);
-		places.add(place9);
-		places.add(place10);
-		places.add(place12);
-
-		return places;
-	}
-
 	public static void setCameraDisplayOrientation(Activity activity,
 			int cameraId, android.hardware.Camera camera) {
 		// take a look at camera.setDisplayOrientation()
@@ -410,6 +345,8 @@ public class RealityActivity extends Activity implements LocationListener,
 			public void run() {
 				startActivity(new Intent(RealityActivity.this,
 						NavigationMapActivity.class));
+
+				dismissDialog(DIALOG_LOADING_MAPVIEW);
 			}
 
 		};
@@ -574,7 +511,7 @@ public class RealityActivity extends Activity implements LocationListener,
 		if (place != null) {
 			Coordinate coord = place.coordinate;
 			if (coord != null) {
-
+				new DownloadDirectionsTask().execute(place);
 			}
 		}
 	}
@@ -643,6 +580,8 @@ public class RealityActivity extends Activity implements LocationListener,
 			// dismissDirectionOverlay();
 
 			Log.d(TAG, "Arrived at destination");
+			mDirectionsLabel
+					.setBackgroundResource(R.drawable.rounded_directions_arrived);
 			mDirectionsLabel.setText("Arrived!");
 		} else {
 			mDirectionsLabel.setText(Place.getDistanceString(event.distance));
@@ -732,27 +671,31 @@ public class RealityActivity extends Activity implements LocationListener,
 					}
 				}
 
-				if (places.length == 1) {
-					place = (Place) places[0];
-					float bearing = place.bearing;
-					if (bearing >= 0) {
-						Waypoint waypoint = new BearingWaypoint(bearing);
-						waypoint.setPlace(place);
-						new GenerateDirectionsTask().execute(waypoint);
-					}
-				}
-			} else {
-				/*
-				 * This is for debugging purposes only.
-				 */
-				placeList = getPlacesTest();
+				// if (places.length == 1) {
+				// place = (Place) places[0];
+				// float bearing = place.bearing;
+				// if (bearing >= 0) {
+				// Waypoint waypoint = new BearingWaypoint(bearing);
+				// waypoint.setPlace(place);
+				// new GenerateDirectionsTask().execute(waypoint);
+				// }
+				// }
 			}
 
 			return placeList;
 		}
 
 		protected void onPostExecute(final List<Place> places) {
-			updateWithPlaces(places);
+			int size;
+			if (places != null) {
+				updateWithPlaces(places);
+
+				size = places.size();
+			} else {
+				size = 0;
+			}
+
+			mRealityStatusLabel.setText(size + " results found");
 
 			Location location = mLocationListener.getLastKnownLocation();
 			if (location != null) {

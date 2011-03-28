@@ -10,6 +10,7 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
+import android.util.Log;
 
 /**
  * This class is responsible for interpreting the orientation of the device and
@@ -143,7 +144,13 @@ public class RealityOrientationListener implements SensorEventListener,
 			}
 
 			difference /= 180;
-			values[i] = (float) ((oldValues[i] * (1 - difference)) + (values[i] * difference));
+			if (difference < 0.2f) {
+				difference /= 2;
+				Log.d(TAG, "Value differences: " + difference);
+				values[i] = (float) ((oldValues[i] * (1 - difference)) + (values[i] * difference));
+			} else {
+				values[i] = (float) ((oldValues[i] * (1 - difference)) + (values[i] * difference));
+			}
 		}
 
 		// Save the current values.

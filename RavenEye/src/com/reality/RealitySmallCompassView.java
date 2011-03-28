@@ -15,7 +15,8 @@ public class RealitySmallCompassView extends RealityCompassView {
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 		int parentWidth = MeasureSpec.getSize(widthMeasureSpec);
 
-		super.onMeasure(parentWidth >> 2, parentWidth >> 2);
+		int radius = (int) (parentWidth * 0.3f);
+		super.onMeasure(radius, radius);
 	}
 
 	@Override
