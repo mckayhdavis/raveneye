@@ -1,14 +1,34 @@
 package com.reality;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import android.app.Dialog;
 import android.app.ListActivity;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -22,18 +42,21 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.common.HttpBuilder;
 import com.common.Place;
 import com.common.Review;
 
 public class ReviewListActivity extends ListActivity {
 
-	private LinearLayout mLoadingPanel;
-	private TextView mLoadingText;
+	public static final String TAG = "ReviewListActivity";
+
+	public static final int DIALOG_LOADING = 0;
+
 	private EditText mReviewText;
 	private Button mSubmitButton;
 
 	private Place mPlace;
-	private ArrayList<Review> mReviews;
+	private List<Review> mReviews;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -41,8 +64,6 @@ public class ReviewListActivity extends ListActivity {
 
 		setContentView(R.layout.review_list_activity);
 
-		mLoadingPanel = (LinearLayout) findViewById(R.id.hidden_message);
-		mLoadingText = (TextView) findViewById(R.id.hidden_message_text);
 		mReviewText = (EditText) findViewById(R.id.review_text);
 		mSubmitButton = (Button) findViewById(R.id.submit);
 
@@ -75,32 +96,129 @@ public class ReviewListActivity extends ListActivity {
 
 		registerForContextMenu(listView);
 
-		showLoadingPanel(null);
+		refresh();
 	}
 
-	private void showLoadingPanel(CharSequence text) {
-		int animResource, visibility;
-		if (text != null) {
-			animResource = R.anim.top_slide_down;
-			visibility = View.VISIBLE;
+	public void refresh() {
+		try {
+			new DownloadReviewsTask().execute(new URL(
+					"http://tailoredpages.com/raven/reviews.php?format=json&limit=10&placeid="
+							+ mPlace.id + "&content=basic"));
+		} catch (MalformedURLException e) {
 
-			mLoadingText.setText(text);
-		} else {
-			animResource = R.anim.top_slide_up;
-			visibility = View.GONE;
+		}
+	}
+
+	private class DownloadReviewsTask extends
+			AsyncTask<URL, Void, List<Review>> {
+		protected List<Review> doInBackground(URL... url) {
+			runOnUiThread(new Runnable() {
+				public void run() {
+					showDialog(DIALOG_LOADING);
+				}
+			});
+
+			URL aUrl = url[0];
+			if (aUrl != null) {
+				return getReviews(aUrl);
+			}
+
+			return null;
 		}
 
-		// If the panel's current visibility is the same as the desired
-		// visibility, return and do not show the translate animation.
-		if (mLoadingPanel.getVisibility() == visibility) {
-			return;
+		protected void onPostExecute(final List<Review> reviews) {
+			dismissDialog(DIALOG_LOADING);
+
+			if (reviews != null) {
+				synchronized (mReviews) {
+					mReviews.clear();
+					mReviews.addAll(reviews);
+
+					mAdapter.notifyDataSetChanged();
+				}
+			}
 		}
 
-		// Start the translate animation.
-		// Animation anim = AnimationUtils.loadAnimation(this, animResource);
-		// mLoadingPanel.startAnimation(anim);
-		mLoadingPanel.setVisibility(visibility); // force persistence on the
-													// translation
+	}
+
+	private List<Review> getReviews(URL url) {
+		final HttpClient httpclient = new DefaultHttpClient();
+		final HttpGet httpget = new HttpGet(url.toString());
+		HttpResponse response;
+
+		try {
+			response = httpclient.execute(httpget);
+
+			// Examine the response status.
+			Log.i(TAG, response.getStatusLine().toString());
+
+			// Get hold of the response entity.
+			HttpEntity entity = response.getEntity();
+			// If the response does not enclose an entity, there is no need
+			// to worry about connection release.
+
+			if (entity != null) {
+				List<Review> items = new ArrayList<Review>();
+
+				// A Simple JSON Response Read
+				InputStream instream = entity.getContent();
+				String result = HttpBuilder.convertStreamToString(instream);
+
+				// A Simple JSONObject Creation
+				JSONObject json = new JSONObject(result);
+				// JSONObject placeObject = json.getJSONObject("posts");
+				JSONArray placesArray = json.getJSONArray("reviews");
+
+				int len = placesArray.length();
+				JSONObject obj;
+				for (int i = 0; i < len; i++) {
+					obj = placesArray.getJSONObject(i).getJSONObject("review");
+
+					String name = obj.getString("Name");
+					String date = obj.getString("Date");
+					String text = obj.getString("Text");
+
+					items.add(new Review(name, text, date));
+				}
+
+				// A Simple JSONObject Value Pushing
+				json.put("sample key", "sample value");
+				Log.i(TAG, "<jsonobject>\n" + json.toString()
+						+ "\n</jsonobject>");
+
+				// Closing the input stream will trigger connection release
+				instream.close();
+
+				return items;
+			}
+
+		} catch (ClientProtocolException e) {
+			Log.e(TAG, e.toString());
+		} catch (IOException e) {
+			Log.e(TAG, e.toString());
+		} catch (final JSONException e) {
+			Log.e(TAG, e.toString());
+		}
+
+		return null;
+	}
+
+	/*
+	 * Dialog methods.
+	 */
+
+	@Override
+	protected Dialog onCreateDialog(int id) {
+		Dialog dialog;
+		switch (id) {
+		case DIALOG_LOADING:
+			dialog = ProgressDialog.show(this, null, "Loading. Please wait...");
+			// dialog.setCancelable(true);
+			break;
+		default:
+			dialog = null;
+		}
+		return dialog;
 	}
 
 	private SectionedAdapter mAdapter = new SectionedAdapter() {
@@ -124,14 +242,10 @@ public class ReviewListActivity extends ListActivity {
 		private LayoutInflater mInflater;
 
 		public ReviewsAdapter(Context context, int textViewResourceId,
-				ArrayList<Review> mItems) {
-			super(context, textViewResourceId, mItems);
+				List<Review> items) {
+			super(context, textViewResourceId, items);
 
 			mInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		}
-
-		public ArrayList<Review> getItems() {
-			return mReviews;
 		}
 
 		@Override
@@ -171,6 +285,25 @@ public class ReviewListActivity extends ListActivity {
 				dateText.setText(date);
 
 			return v;
+		}
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.review, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// Handle item selection
+		switch (item.getItemId()) {
+		case R.id.refresh:
+			refresh();
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
 		}
 	}
 
@@ -238,7 +371,6 @@ public class ReviewListActivity extends ListActivity {
 					// getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 					InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 					imm.hideSoftInputFromWindow(mReviewText.getWindowToken(), 0);
-
 
 					// listView.scrollTo(0, listView..getBaseline());
 				}

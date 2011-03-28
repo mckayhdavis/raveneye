@@ -23,7 +23,7 @@ import android.util.Log;
 public class RealityOrientationListener implements SensorEventListener,
 		LocationListener {
 
-	public static final String TAG = "RealityPhysicsSensorListener";
+	public static final String TAG = "RealityOrientationListener";
 
 	public static final float RAD_TO_DEG = (float) (180.0f / Math.PI);
 	public static final float DEG_TO_RAD = (float) (Math.PI / 180.0f);
@@ -125,7 +125,7 @@ public class RealityOrientationListener implements SensorEventListener,
 		for (int i = 0; i < 3; ++i) {
 			/*
 			 * Account for azimuth rotations around SOUTH. Azimuth values range
-			 * is (-180,180].
+			 * is (-180,180] where 0 is NORTH.
 			 * 
 			 * Only account for wrap-around at SOUTH. Don't use corrections at
 			 * the NORTH azimuth value (around 0 degrees).
@@ -144,13 +144,23 @@ public class RealityOrientationListener implements SensorEventListener,
 			}
 
 			difference /= 180;
-			if (difference < 0.2f) {
-				difference /= 2;
-				Log.d(TAG, "Value differences: " + difference);
+
+			if (difference < 15) {
 				values[i] = (float) ((oldValues[i] * (1 - difference)) + (values[i] * difference));
 			} else {
-				values[i] = (float) ((oldValues[i] * (1 - difference)) + (values[i] * difference));
+				/*
+				 * Initially the sensor values seem to be unstable (Possible
+				 * bug??). We use this filtering technique instead here. This
+				 * shouldn't run in this state for long and only seems to run
+				 * around NORTH.
+				 */
+				values[i] = (float) ((oldValues[i] * (1 - difference)) + ((values[i] / Math
+						.abs(values[i])) * difference));
+
+				Log.e(TAG,
+						"filterValues() - Orientation values are unstable. Attempting to correct values.");
 			}
+
 		}
 
 		// Save the current values.

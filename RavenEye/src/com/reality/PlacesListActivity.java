@@ -1,9 +1,7 @@
 package com.reality;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -46,9 +44,9 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.common.Coordinate;
+import com.common.HttpBuilder;
 import com.common.Place;
 
 public class PlacesListActivity extends ListActivity {
@@ -137,20 +135,21 @@ public class PlacesListActivity extends ListActivity {
 
 				// A Simple JSON Response Read
 				InputStream instream = entity.getContent();
-				String result = convertStreamToString(instream);
+				String result = HttpBuilder.convertStreamToString(instream);
 
 				// A Simple JSONObject Creation
 				JSONObject json = new JSONObject(result);
 				// JSONObject placeObject = json.getJSONObject("posts");
-				JSONArray placesArray = json.getJSONArray("posts");
+				JSONArray placesArray = json.getJSONArray("places");
 
 				int len = placesArray.length();
 				JSONObject obj;
+				Place place;
 				for (int i = 0; i < len; i++) {
-					obj = placesArray.getJSONObject(i).getJSONObject("post");
+					obj = placesArray.getJSONObject(i).getJSONObject("place");
 
+					String id = obj.getString("ID");
 					String name = obj.getString("Name");
-					String description = obj.getString("Description");
 
 					Coordinate coord;
 					try {
@@ -161,7 +160,8 @@ public class PlacesListActivity extends ListActivity {
 						coord = null;
 					}
 
-					places.add(new Place(name, description, null, coord));
+					place = new Place(Integer.parseInt(id), name, coord);
+					places.add(place);
 				}
 
 				// A Simple JSONObject Value Pushing
@@ -184,33 +184,6 @@ public class PlacesListActivity extends ListActivity {
 		}
 
 		return null;
-	}
-
-	private static String convertStreamToString(InputStream is) {
-		/*
-		 * To convert the InputStream to String we use the
-		 * BufferedReader.readLine() method. We iterate until the BufferedReader
-		 * return null which means there's no more data to read. Each line will
-		 * appended to a StringBuilder and returned as String.
-		 */
-		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-		StringBuilder sb = new StringBuilder();
-
-		String line = null;
-		try {
-			while ((line = reader.readLine()) != null) {
-				sb.append(line + "\n");
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				is.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		return sb.toString();
 	}
 
 	/*

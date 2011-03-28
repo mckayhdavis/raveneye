@@ -127,9 +127,6 @@ public class PlacesActivity extends Activity {
 		case R.id.gallery:
 			onPictureClick(null);
 			return true;
-		case R.id.rate:
-			onRateClick(null);
-			return true;
 		case R.id.review:
 			onWriteReviewClick(null);
 			return true;
@@ -164,27 +161,6 @@ public class PlacesActivity extends Activity {
 
 	public void onAddToFavouritesClick(View v) {
 
-	}
-
-	public void onRateClick(View v) {
-		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setView(LayoutInflater.from(this).inflate(R.layout.rate_dialog,
-				null));
-		builder.setTitle("Rate this place")
-				.setNegativeButton("Cancel",
-						new DialogInterface.OnClickListener() {
-							public void onClick(DialogInterface dialog, int id) {
-								dialog.cancel();
-							}
-						})
-				.setPositiveButton("Rate",
-						new DialogInterface.OnClickListener() {
-							public void onClick(DialogInterface dialog, int id) {
-
-							}
-						});
-		AlertDialog alert = builder.create();
-		alert.show();
 	}
 
 	public void onWriteReviewClick(View v) {

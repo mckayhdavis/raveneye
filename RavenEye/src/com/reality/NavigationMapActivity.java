@@ -90,42 +90,12 @@ public class NavigationMapActivity extends MapActivity {
 			try {
 				places = (Object[]) extras.getSerializable(Place.class
 						.toString());
+				new DownloadPlacesTask().execute(places);
 			} catch (ClassCastException e) {
 				finish();
 				return;
 			}
-		} else {
-			places = new Object[12];
-
-			int i = 0;
-			places[i++] = new Place("", "", "", new Coordinate(
-					(float) 45283846 / 1000000, (float) -76020133 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate(
-					(float) 45283768 / 1000000, (float) -76020078 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate(
-					(float) 45283794 / 1000000, (float) -76020057 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate(
-					(float) 45283765 / 1000000, (float) -76020028 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate(
-					(float) 45283739 / 1000000, (float) -76020005 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate(
-					(float) 45283711 / 1000000, (float) -76019998 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate(
-					(float) 45283677 / 1000000, (float) -76019982 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate(
-					(float) 45283641 / 1000000, (float) -76019965 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate(
-					(float) 45283609 / 1000000, (float) -76019938 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate(
-					(float) 45283583 / 1000000, (float) -76019923 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate(
-					(float) 45283555 / 1000000, (float) -76019954 / 1000000));
-			places[i++] = new Place("", "", "", new Coordinate(
-					(float) 45283544 / 1000000, (float) -76019995 / 1000000));
 		}
-		new DownloadPlacesTask().execute(places);
-
-		showDialog(DIALOG_LOADING);
 	}
 
 	@Override
@@ -161,6 +131,12 @@ public class NavigationMapActivity extends MapActivity {
 	private class DownloadPlacesTask extends
 			AsyncTask<Object[], Void, List<Place>> {
 		protected List<Place> doInBackground(Object[]... p) {
+			runOnUiThread(new Runnable() {
+				public void run() {
+					showDialog(DIALOG_LOADING);
+				}
+			});
+
 			Object[] places = p[0];
 			if (places != null) {
 				GeoPoint point = null;

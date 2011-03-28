@@ -59,6 +59,7 @@ public class RealityActivity extends Activity implements LocationListener,
 	public static final String TAG = "RealityActivity";
 	public static final boolean USE_CAMERA = true;
 
+	private static final int DIALOG_DEFAULT_STATUS = -1;
 	private static final int DIALOG_LOADING_GPS = 0;
 	private static final int DIALOG_LOADING_DIRECTIONS = 1;
 	private static final int DIALOG_GPS_UNAVAILABLE = 2;
@@ -391,6 +392,20 @@ public class RealityActivity extends Activity implements LocationListener,
 		}
 	};
 
+	protected void showStatusLabel(int id) {
+		switch (id) {
+		case DIALOG_LOADING_GPS:
+			mRealityStatusLabel.setText("Acquiring satellite signal");
+			break;
+		case DIALOG_GPS_UNAVAILABLE:
+			mRealityStatusLabel.setText("Lost satellite signal");
+			break;
+		default:
+			mRealityStatusLabel.setText(mSurface.getPlacesCount()
+					+ " results found");
+		}
+	}
+
 	/*
 	 * Dialog methods.
 	 */
@@ -598,7 +613,8 @@ public class RealityActivity extends Activity implements LocationListener,
 				mGpsTimer.cancel();
 				mGpsTimer = null;
 
-				dismissDialog(DIALOG_LOADING_GPS);
+				// dismissDialog(DIALOG_LOADING_GPS);
+				showStatusLabel(DIALOG_DEFAULT_STATUS);
 			}
 
 			if (!mOrientationListener.hasLocation()) {
@@ -617,7 +633,8 @@ public class RealityActivity extends Activity implements LocationListener,
 
 	public void onStatusChanged(String provider, int status, Bundle extras) {
 		if (status != LocationProvider.AVAILABLE) {
-			showDialog(DIALOG_LOADING_GPS);
+			// showDialog(DIALOG_LOADING_GPS);
+			showStatusLabel(DIALOG_LOADING_GPS);
 		}
 	}
 
@@ -632,7 +649,7 @@ public class RealityActivity extends Activity implements LocationListener,
 
 				public void run() {
 					if (!mLocationListener.hasLocation()) {
-						showDialog(DIALOG_LOADING_GPS);
+						showStatusLabel(DIALOG_LOADING_GPS);
 
 						TimerTask task = new TimerTask() {
 
@@ -641,7 +658,7 @@ public class RealityActivity extends Activity implements LocationListener,
 								runOnUiThread(new Runnable() {
 
 									public void run() {
-										dismissDialog(DIALOG_LOADING_GPS);
+										showStatusLabel(DIALOG_GPS_UNAVAILABLE);
 										showDialog(DIALOG_GPS_UNAVAILABLE);
 									}
 
@@ -686,16 +703,9 @@ public class RealityActivity extends Activity implements LocationListener,
 		}
 
 		protected void onPostExecute(final List<Place> places) {
-			int size;
 			if (places != null) {
 				updateWithPlaces(places);
-
-				size = places.size();
-			} else {
-				size = 0;
 			}
-
-			mRealityStatusLabel.setText(size + " results found");
 
 			Location location = mLocationListener.getLastKnownLocation();
 			if (location != null) {
