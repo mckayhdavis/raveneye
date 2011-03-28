@@ -33,17 +33,17 @@
             android:id="@+id/viewmap_btn"
             android:layout_toRightOf="@+id/viewreality_btn"
             android:onClick="onViewMapClick" />
-    <!-- <ImageButton -->
-    <!-- android:layout_width="wrap_content" -->
-    <!-- android:layout_height="50dip" -->
-    <!-- android:layout_weight="0.33" -->
-    <!-- android:scaleType="fitCenter" -->
-    <!-- android:src="@drawable/ic_menu_add" -->
-    <!-- android:layout_below="@+id/hr" -->
-    <!-- android:id="@+id/add_favourite_btn" -->
-    <!-- android:layout_toRightOf="@+id/directions_btn" -->
-    <!-- android:onClick="onAddToFavouritesClick" -->
-    <!-- android:enabled="false" /> -->
+        <!-- <ImageButton -->
+        <!-- android:layout_width="wrap_content" -->
+        <!-- android:layout_height="50dip" -->
+        <!-- android:layout_weight="0.33" -->
+        <!-- android:scaleType="fitCenter" -->
+        <!-- android:src="@drawable/ic_menu_add" -->
+        <!-- android:layout_below="@+id/hr" -->
+        <!-- android:id="@+id/add_favourite_btn" -->
+        <!-- android:layout_toRightOf="@+id/directions_btn" -->
+        <!-- android:onClick="onAddToFavouritesClick" -->
+        <!-- android:enabled="false" /> -->
     </LinearLayout>
     <ScrollView
         android:layout_height="fill_parent"
