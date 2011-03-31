@@ -17,6 +17,7 @@ import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.hardware.Sensor;
+import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Criteria;
@@ -78,8 +79,8 @@ public class RealityActivity extends Activity implements LocationListener,
 	private DirectionManager<?> mDirectionManager = null;
 
 	public static final int ACQUIRE_GPS_TIMEOUT = 15000;
-	public static final int MIN_TIME_BETWEEN_LOCATION_UPDATES = 1000;
-	public static final int MIN_DISTANCE_BETWEEN_LOCATION_UPDATES = 3;
+	public static final int MIN_TIME_BETWEEN_LOCATION_UPDATES = 1500;
+	public static final int MIN_DISTANCE_BETWEEN_LOCATION_UPDATES = 0;
 
 	private RealityOverlayView mSurface;
 	private RealitySmallCompassView mCompassView;
@@ -335,7 +336,7 @@ public class RealityActivity extends Activity implements LocationListener,
 	}
 
 	public void onDirectoryClick(View v) {
-		this.startActivity(new Intent(this, PlacesListActivity.class));
+		this.startActivity(new Intent(this, PlaceListActivity.class));
 	}
 
 	public void onViewMapClick(View v) {
@@ -416,17 +417,16 @@ public class RealityActivity extends Activity implements LocationListener,
 		case DIALOG_LOADING_GPS:
 			dialog = ProgressDialog.show(this, null,
 					"Acquiring GPS signal. Please wait...");
-			// dialog.setCancelable(true);
+			dialog.setCancelable(true);
 			break;
 		case DIALOG_LOADING_DIRECTIONS:
 			dialog = ProgressDialog.show(this, null,
 					"Loading directions. Please wait...");
+			dialog.setCancelable(true);
 			break;
 		case DIALOG_GPS_UNAVAILABLE:
 			AlertDialog.Builder builder = new AlertDialog.Builder(this);
-			builder.setTitle("Unable to acquire satellite signal")
-					.setMessage(
-							"The reality compass will still work, but navigation will not.")
+			builder.setTitle("No satellite signal")
 					.setCancelable(true)
 					.setNegativeButton("Close",
 							new DialogInterface.OnClickListener() {
@@ -440,12 +440,11 @@ public class RealityActivity extends Activity implements LocationListener,
 		case DIALOG_DOWNLOADING_DIRECTIONS:
 			dialog = ProgressDialog.show(this, null,
 					"Downloading directions. Please wait...");
+			dialog.setCancelable(true);
 			break;
 		case DIALOG_DOWNLOADING_DIRECTIONS_FAILED:
 			builder = new AlertDialog.Builder(this);
-			builder.setTitle("Unable to load directions!")
-					.setMessage(
-							"An error occured while trying to load the directions.")
+			builder.setTitle("No directions found")
 					.setCancelable(true)
 					.setNegativeButton("Okay",
 							new DialogInterface.OnClickListener() {
@@ -467,26 +466,6 @@ public class RealityActivity extends Activity implements LocationListener,
 		}
 		return dialog;
 	}
-
-	/*
-	 * SensorEventListener methods.
-	 */
-
-	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-	}
-
-	// public void onSensorChanged(SensorEvent event) {
-	// final float[] values = event.values;
-	//
-	// int val = (int) values[0];
-	//
-	// String displayDir = headingNames[val];
-	//
-	// if (!compassHeadingLabel.getText().equals(displayDir)) {
-	// compassHeadingLabel.setText(displayDir);
-	// }
-	// }
 
 	/*
 	 * MotionEvent methods.
@@ -535,7 +514,7 @@ public class RealityActivity extends Activity implements LocationListener,
 		Place place = mSurface.getSelectedPlace();
 		// TODO: Shouldn't ever be null...
 		if (place != null) {
-			Intent intent = new Intent(this, PlacesActivity.class);
+			Intent intent = new Intent(this, PlaceActivity.class);
 			intent.putExtra(Place.class.toString(), place);
 			this.startActivity(intent);
 		}
@@ -622,8 +601,11 @@ public class RealityActivity extends Activity implements LocationListener,
 			}
 		}
 
-		mStatusLabel.setText("Accuracy: " + location.getAccuracy());
+		mStatusLabel.setText("Accuracy: (" + ++mLocationCount + ") "
+				+ location.getAccuracy());
 	}
+
+	private int mLocationCount = 0;
 
 	public void onProviderDisabled(String provider) {
 	}

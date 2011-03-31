@@ -364,7 +364,7 @@ public class NavigationMapActivity extends MapActivity {
 	}
 
 	public void onPlacesClick(View v) {
-		this.startActivity(new Intent(this, PlacesListActivity.class));
+		this.startActivity(new Intent(this, PlaceListActivity.class));
 	}
 
 	public void onDirectionsClick(View v) {

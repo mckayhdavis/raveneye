@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.http.HttpEntity;
@@ -39,6 +40,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.RotateAnimation;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
@@ -49,22 +52,20 @@ import com.common.Coordinate;
 import com.common.HttpBuilder;
 import com.common.Place;
 
-public class PlacesListActivity extends ListActivity {
+public class PlaceListActivity extends ListActivity {
 
-	public static final String TAG = "PlacesListActivity";
+	public static final String TAG = "RealityActivity";
 
 	public static final int DIALOG_LOADING = 0;
 
-	private ArrayList<Place> mPlaces = new ArrayList<Place>();
+	private final ArrayList<Place> mPlaces = new ArrayList<Place>();
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.places_list_activity);
 
-		mAdapter.addSection("Places", new PlaceAdapter(this, mPlaces));
-
-		setListAdapter(mAdapter);
+		setListAdapter(new PlaceAdapter(mPlaces));
 
 		registerForContextMenu(getListView());
 	}
@@ -72,46 +73,6 @@ public class PlacesListActivity extends ListActivity {
 	@Override
 	public void onResume() {
 		super.onResume();
-
-		onRefreshClick(null);
-	}
-
-	private class DownloadPlacesTask extends AsyncTask<URL, Void, List<Place>> {
-		protected List<Place> doInBackground(URL... url) {
-			runOnUiThread(new Runnable() {
-				public void run() {
-					showDialog(DIALOG_LOADING);
-				}
-			});
-
-			URL aUrl = url[0];
-			if (aUrl != null) {
-				return getPlaces(aUrl);
-			}
-
-			return null;
-		}
-
-		protected void onPostExecute(final List<Place> places) {
-			dismissDialog(DIALOG_LOADING);
-
-			if (places != null) {
-				synchronized (mPlaces) {
-					Location location = getInitialLocation();
-
-					int len = places.size();
-					for (int i = 0; i < len; ++i) {
-						places.get(i).updateWithLocation(location);
-					}
-
-					mPlaces.clear();
-					mPlaces.addAll(places);
-
-					mAdapter.notifyDataSetChanged();
-				}
-			}
-		}
-
 	}
 
 	private List<Place> getPlaces(URL url) {
@@ -150,6 +111,7 @@ public class PlacesListActivity extends ListActivity {
 
 					String id = obj.getString("ID");
 					String name = obj.getString("Name");
+					String code = obj.getString("Code");
 
 					Coordinate coord;
 					try {
@@ -161,6 +123,7 @@ public class PlacesListActivity extends ListActivity {
 					}
 
 					place = new Place(Integer.parseInt(id), name, coord);
+					place.buildingCode = code;
 					places.add(place);
 				}
 
@@ -322,21 +285,21 @@ public class PlacesListActivity extends ListActivity {
 		return picture;
 	}
 
-	private SectionedAdapter mAdapter = new SectionedAdapter() {
-		protected View getHeaderView(String caption, int index,
-				View convertView, ViewGroup parent) {
-			TextView result = (TextView) convertView;
-
-			if (convertView == null) {
-				result = (TextView) getLayoutInflater().inflate(
-						R.layout.list_header, null);
-			}
-
-			result.setText(caption);
-
-			return (result);
-		}
-	};
+	// private SectionedAdapter mAdapter = new SectionedAdapter() {
+	// protected View getHeaderView(String caption, int index,
+	// View convertView, ViewGroup parent) {
+	// TextView result = (TextView) convertView;
+	//
+	// if (convertView == null) {
+	// result = (TextView) getLayoutInflater().inflate(
+	// R.layout.list_header, null);
+	// }
+	//
+	// result.setText(caption);
+	//
+	// return (result);
+	// }
+	// };
 
 	private static class ViewHolder {
 		ImageView icon;
@@ -345,14 +308,17 @@ public class PlacesListActivity extends ListActivity {
 		TextView bottomRight;
 	}
 
-	private class PlaceAdapter extends ArrayAdapter<Place> {
+	private class PlaceAdapter extends EndlessAdapter<Place> {
+
+		private RotateAnimation rotate = null;
 
 		private LayoutInflater mInflater;
 
 		private final Bitmap mDefaultBitmap;
 
-		public PlaceAdapter(Context context, ArrayList<Place> places) {
-			super(context, R.layout.places_list_item, places);
+		public PlaceAdapter(ArrayList<Place> places) {
+			super(new ArrayAdapter<Place>(PlaceListActivity.this,
+					R.layout.places_list_item, places));
 
 			mDefaultBitmap = BitmapFactory.decodeResource(getResources(),
 					R.drawable.ic_menu_gallery);
@@ -362,6 +328,12 @@ public class PlacesListActivity extends ListActivity {
 			// 50, true);
 
 			mInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+			rotate = new RotateAnimation(0f, 360f, Animation.RELATIVE_TO_SELF,
+					0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+			rotate.setDuration(2000);
+			rotate.setRepeatMode(Animation.RESTART);
+			rotate.setRepeatCount(Animation.INFINITE);
 		}
 
 		@Override
@@ -388,36 +360,110 @@ public class PlacesListActivity extends ListActivity {
 			Place place = null;
 
 			synchronized (this) {
-				if (position < mPlaces.size()) {
-					place = mPlaces.get(position);
+				if (position < this.getItemCount()) {
+					place = (Place) this.getItem(position);
 				}
 			}
 
-			Bitmap bitmap;
-			int resId = place.getImageResourceId();
-			if (resId >= 0) {
-				bitmap = BitmapFactory.decodeResource(getResources(), resId);
-			} else {
-				bitmap = mDefaultBitmap;
+			if (place != null) {
+				Bitmap bitmap;
+				int resId = place.getImageResourceId();
+				if (resId >= 0) {
+					bitmap = BitmapFactory
+							.decodeResource(getResources(), resId);
+				} else {
+					bitmap = mDefaultBitmap;
+				}
+
+				holder.icon.setImageBitmap(bitmap);
+				holder.top.setText(place.name);
+				if (place.distance >= 0) {
+					holder.bottom.setText("Distance: "
+							+ Place.getDistanceString(place.distance));
+				} else {
+					holder.bottom.setText("");
+				}
+				holder.bottomRight.setText(place.buildingCode);
 			}
 
-			holder.icon.setImageBitmap(bitmap);
-			holder.top.setText(place.name);
-			if (place.distance >= 0) {
-				holder.bottom.setText("Distance: "
-						+ Place.getDistanceString(place.distance));
-			} else {
-				holder.bottom.setText("");
-			}
-			holder.bottomRight.setText(place.buildingCode);
+			return super.getView(position, convertView, parent);
+		}
 
-			return convertView;
+		@Override
+		protected View getPendingView(ViewGroup parent) {
+			View row = getLayoutInflater().inflate(R.layout.loading_list_item,
+					null);
+
+			row.setClickable(false);
+			row.setEnabled(false);
+
+			View child = row.findViewById(R.id.text);
+
+			child = row.findViewById(R.id.throbber);
+			child.setVisibility(View.VISIBLE);
+			child.startAnimation(rotate);
+
+			return (row);
+		}
+
+		@Override
+		protected List<Place> cacheInBackground() {
+			try {
+				int offset = this.getDownloadOffset();
+				int limit = offset + 10;
+
+				URL aUrl = new URL(
+						"http://tailoredpages.com/raven/places.php?format=json&offset="
+								+ offset + "limit=" + limit);
+				if (aUrl != null) {
+					List<Place> data = getPlaces(aUrl);
+
+					return data;
+				}
+			} catch (MalformedURLException e) {
+
+			}
+
+			return null;
+		}
+
+		@Override
+		protected void addCachedData(List<Place> data, boolean append) {
+			@SuppressWarnings("unchecked")
+			ArrayAdapter<Place> adapter = (ArrayAdapter<Place>) getWrappedAdapter();
+
+			if (data != null) {
+				if (!append) {
+					// A refresh is requested.
+					mPlaces.clear();
+				}
+
+				Location location = getInitialLocation();
+
+				int len = data.size();
+				Place place;
+				for (int i = 0; i < len; ++i) {
+					place = data.get(i);
+
+					place.updateWithLocation(location);
+					adapter.add(place);
+				}
+			} else {
+				// We have possibly reached the end of the data-set from the
+				// web-service. Prevent the loading bar from continually
+				// showing.
+
+			}
 		}
 	}
 
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
-		onOpenClick((Place) mAdapter.getItem(position));
+		@SuppressWarnings("unchecked")
+		EndlessAdapter<Place> adapter = (EndlessAdapter<Place>) getListAdapter();
+		if (position < adapter.getItemCount()) {
+			onOpenClick((Place) adapter.getItem(position));
+		}
 	}
 
 	@Override
@@ -426,12 +472,15 @@ public class PlacesListActivity extends ListActivity {
 		if (v.getId() == android.R.id.list) {
 			AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
 
-			Place p = (Place) mAdapter.getItem(info.position);
+			EndlessAdapter adapter = (EndlessAdapter) getListAdapter();
+			if (info.position < adapter.getItemCount()) {
+				Place p = (Place) adapter.getItem(info.position);
 
-			menu.setHeaderTitle(p.name);
-			super.onCreateContextMenu(menu, v, menuInfo);
-			MenuInflater inflater = getMenuInflater();
-			inflater.inflate(R.menu.places_context_menu, menu);
+				menu.setHeaderTitle(p.name);
+				super.onCreateContextMenu(menu, v, menuInfo);
+				MenuInflater inflater = getMenuInflater();
+				inflater.inflate(R.menu.places_context_menu, menu);
+			}
 		}
 	}
 
@@ -439,7 +488,7 @@ public class PlacesListActivity extends ListActivity {
 	public boolean onContextItemSelected(MenuItem item) {
 		AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item
 				.getMenuInfo();
-		Place place = (Place) mAdapter.getItem(info.position);
+		Place place = (Place) getListAdapter().getItem(info.position);
 		switch (item.getItemId()) {
 		case R.id.open:
 			onOpenClick(place);
@@ -484,17 +533,11 @@ public class PlacesListActivity extends ListActivity {
 	}
 
 	public void onRefreshClick(View v) {
-		try {
-			new DownloadPlacesTask()
-					.execute(new URL(
-							"http://tailoredpages.com/raven/places.php?format=json&limit=10"));
-		} catch (MalformedURLException e) {
-
-		}
+		((EndlessAdapter<?>) getListAdapter()).refresh();
 	}
 
 	public void onOpenClick(Place place) {
-		Intent intent = new Intent(this, PlacesActivity.class);
+		Intent intent = new Intent(this, PlaceActivity.class);
 		intent.putExtra(Place.class.toString(), place);
 
 		this.startActivity(intent);

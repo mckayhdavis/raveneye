@@ -77,7 +77,7 @@ public class RealityOverlayView extends SensorView {
 	private static final int HORIZONTAL_QUADRANTS = 8;
 	private static final int HORIZONTAL_QUADRANT_ANGLE = 360 / HORIZONTAL_QUADRANTS;
 	private static final int VERTICAL_QUADRANTS = 1;
-	private static final int VERTICAL_QUADRANT_ANGLE = 90 / VERTICAL_QUADRANTS;
+	private static final int VERTICAL_QUADRANT_ANGLE = 80 / VERTICAL_QUADRANTS;
 
 	private static final int HORIZON = 100;
 

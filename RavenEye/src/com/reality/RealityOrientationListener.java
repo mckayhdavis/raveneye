@@ -67,6 +67,11 @@ public class RealityOrientationListener implements SensorEventListener,
 		synchronized (this) {
 			final float[] values = event.values;
 
+			// if (event.accuracy != SensorManager.SENSOR_STATUS_ACCURACY_HIGH)
+			// {
+			// Log.e(TAG, "Accuracy not high");
+			// }
+
 			switch (event.sensor.getType()) {
 			case Sensor.TYPE_ACCELEROMETER:
 				System.arraycopy(values, 0, gravity, 0, 3);
@@ -93,13 +98,13 @@ public class RealityOrientationListener implements SensorEventListener,
 
 			// Log.d(TAG, "(" + values[0] + "," + values[1] + "," + values[2]
 			// + ") " + event.sensor.getResolution());
+		}
 
-			/*
-			 * Broadcast to the observers.
-			 */
-			for (SensorEventListener listener : mObservers) {
-				listener.onSensorChanged(event);
-			}
+		/*
+		 * Broadcast to the observers.
+		 */
+		for (SensorEventListener listener : mObservers) {
+			listener.onSensorChanged(event);
 		}
 	}
 
@@ -144,23 +149,22 @@ public class RealityOrientationListener implements SensorEventListener,
 			}
 
 			difference /= 180;
+			values[i] = (float) ((oldValues[i] * (1 - difference)) + (values[i] * difference));
 
-			if (difference < 15) {
-				values[i] = (float) ((oldValues[i] * (1 - difference)) + (values[i] * difference));
-			} else {
-				/*
-				 * Initially the sensor values seem to be unstable (Possible
-				 * bug??). We use this filtering technique instead here. This
-				 * shouldn't run in this state for long and only seems to run
-				 * around NORTH.
-				 */
-				values[i] = (float) ((oldValues[i] * (1 - difference)) + ((values[i] / Math
-						.abs(values[i])) * difference));
-
-				Log.e(TAG,
-						"filterValues() - Orientation values are unstable. Attempting to correct values.");
-			}
-
+			// else {
+			// /*
+			// * Initially the sensor values seem to be unstable (Possible
+			// * bug??). We use this filtering technique instead here. This
+			// * shouldn't run in this state for long and only seems to run
+			// * around NORTH.
+			// */
+			// values[i] = (float) ((oldValues[i] * (1 - difference)) +
+			// ((values[i] / Math
+			// .abs(values[i])) * difference));
+			//
+			// Log.e(TAG,
+			// "filterValues() - Orientation values are unstable. Attempting to correct values.");
+			// }
 		}
 
 		// Save the current values.

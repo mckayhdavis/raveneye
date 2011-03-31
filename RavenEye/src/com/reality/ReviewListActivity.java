@@ -33,12 +33,13 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.RotateAnimation;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -57,6 +58,8 @@ public class ReviewListActivity extends ListActivity {
 
 	private Place mPlace;
 	private List<Review> mReviews;
+
+	private ReviewAdapter mAdapter;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -86,23 +89,18 @@ public class ReviewListActivity extends ListActivity {
 			mReviews = new ArrayList<Review>();
 		}
 
-		mAdapter.addSection("Recent", new ReviewsAdapter(this,
-				R.layout.review_list_item, mReviews));
-
-		setListAdapter(mAdapter);
+		setListAdapter(new ReviewAdapter(mReviews));
 
 		final ListView listView = getListView();
 		listView.setTranscriptMode(ListView.TRANSCRIPT_MODE_ALWAYS_SCROLL);
 
 		registerForContextMenu(listView);
-
-		refresh();
 	}
 
 	public void refresh() {
 		try {
 			new DownloadReviewsTask().execute(new URL(
-					"http://tailoredpages.com/raven/reviews.php?format=json&limit=10&placeid="
+					"http://tailoredpages.com/raven/reviews.php?format=json&limit=10&place="
 							+ mPlace.id + "&content=basic"));
 		} catch (MalformedURLException e) {
 
@@ -221,31 +219,38 @@ public class ReviewListActivity extends ListActivity {
 		return dialog;
 	}
 
-	private SectionedAdapter mAdapter = new SectionedAdapter() {
-		protected View getHeaderView(String caption, int index,
-				View convertView, ViewGroup parent) {
-			TextView result = (TextView) convertView;
+	// private SectionedAdapter mAdapter = new SectionedAdapter() {
+	// protected View getHeaderView(String caption, int index,
+	// View convertView, ViewGroup parent) {
+	// TextView result = (TextView) convertView;
+	//
+	// if (convertView == null) {
+	// result = (TextView) getLayoutInflater().inflate(
+	// R.layout.list_header, null);
+	// }
+	//
+	// result.setText(caption);
+	//
+	// return (result);
+	// }
+	// };
 
-			if (convertView == null) {
-				result = (TextView) getLayoutInflater().inflate(
-						R.layout.list_header, null);
-			}
+	private class ReviewAdapter extends EndlessAdapter<Review> {
 
-			result.setText(caption);
-
-			return (result);
-		}
-	};
-
-	private class ReviewsAdapter extends ArrayAdapter<Review> {
-
+		private RotateAnimation rotate = null;
 		private LayoutInflater mInflater;
 
-		public ReviewsAdapter(Context context, int textViewResourceId,
-				List<Review> items) {
-			super(context, textViewResourceId, items);
+		public ReviewAdapter(List<Review> items) {
+			super(new ArrayAdapter<Review>(ReviewListActivity.this,
+					R.layout.review_list_item, items));
 
 			mInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+			rotate = new RotateAnimation(0f, 360f, Animation.RELATIVE_TO_SELF,
+					0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+			rotate.setDuration(2000);
+			rotate.setRepeatMode(Animation.RESTART);
+			rotate.setRepeatCount(Animation.INFINITE);
 		}
 
 		@Override
@@ -285,6 +290,69 @@ public class ReviewListActivity extends ListActivity {
 				dateText.setText(date);
 
 			return v;
+		}
+
+		@Override
+		protected View getPendingView(ViewGroup parent) {
+			View row = getLayoutInflater().inflate(R.layout.loading_list_item,
+					null);
+
+			row.setClickable(false);
+			row.setEnabled(false);
+
+			View child = row.findViewById(R.id.text);
+
+			child = row.findViewById(R.id.throbber);
+			child.setVisibility(View.VISIBLE);
+			child.startAnimation(rotate);
+
+			return (row);
+		}
+
+		@Override
+		protected List<Review> cacheInBackground() {
+			try {
+				int offset = this.getDownloadOffset();
+				int limit = offset + 10;
+
+				URL aUrl = new URL(
+						"http://tailoredpages.com/raven/places.php?format=json&offset="
+								+ offset + "limit=" + limit);
+				if (aUrl != null) {
+					List<Review> data = getReviews(aUrl);
+
+					return data;
+				}
+			} catch (MalformedURLException e) {
+
+			}
+
+			return null;
+		}
+
+		@Override
+		protected void addCachedData(List<Review> data, boolean append) {
+			@SuppressWarnings("unchecked")
+			ArrayAdapter<Review> adapter = (ArrayAdapter<Review>) getWrappedAdapter();
+
+			if (data != null) {
+				if (!append) {
+					// A refresh is requested.
+					mReviews.clear();
+				}
+
+				int len = data.size();
+				Review item;
+				for (int i = 0; i < len; ++i) {
+					item = data.get(i);
+
+					adapter.add(item);
+				}
+			} else {
+				// We have possibly reached the end of the data-set from the
+				// web-service. Prevent the loading bar from continually
+				// showing.
+			}
 		}
 	}
 
