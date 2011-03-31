@@ -4,20 +4,6 @@
     android:layout_height="fill_parent"
     android:layout_width="fill_parent"
     android:orientation="vertical">
-    <LinearLayout
-        android:id="@+id/hidden_message"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:padding="12dip"
-        android:visibility="visible"
-        android:background="#8899CC00">
-        <TextView
-            android:text="Loading..."
-            android:id="@+id/hidden_message_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#FF000000" />
-    </LinearLayout>
     <ListView
         android:id="@+id/android:list"
         android:layout_width="fill_parent"
@@ -27,7 +13,7 @@
         android:id="@+id/android:empty"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:text="@string/places_no_items"
+        android:text="@string/reviews_no_items"
         android:padding="10dp"
         android:textSize="18sp"
         android:layout_weight="1" />

@@ -12,7 +12,7 @@
     <uses-feature android:name="android.hardware.camera.autofocus" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <application
-        android:icon="@drawable/icon"
+        android:icon="@drawable/raven_icon"
         android:label="@string/app_name"
         android:debuggable="true">
         <uses-library android:name="com.google.android.maps" />
@@ -22,12 +22,16 @@
             android:theme="@android:style/Theme.NoTitleBar">
         </activity>
         <activity
-            android:name="com.reality.PlacesListActivity"
+            android:name="PlaceListActivity"
             android:label="@string/places_list_activity"
             android:theme="@style/Theme.RavenEye">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
         <activity
-            android:name="com.reality.PlacesActivity"
+            android:name="PlaceActivity"
             android:label="@string/places_activity"
             android:theme="@style/Theme.RavenEyeNoTitle">
         </activity>
@@ -46,10 +50,6 @@
             android:screenOrientation="portrait"
             android:label="@string/reality_activity"
             android:theme="@style/Theme.RealityNoBackground">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
     </application>
     <uses-sdk android:minSdkVersion="10" />

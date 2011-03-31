@@ -9,12 +9,4 @@
         android:layout_height="fill_parent"
         android:layout_below="@+id/hidden_message"
         android:cacheColorHint="#00000000" />
-    <TextView
-        android:id="@+id/android:empty"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:layout_below="@+id/android:list"
-        android:text="@string/places_no_items"
-        android:padding="10dp"
-        android:textSize="18sp" />
 </RelativeLayout>

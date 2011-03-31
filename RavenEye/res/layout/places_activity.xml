@@ -54,21 +54,6 @@
             android:layout_height="fill_parent"
             android:layout_width="fill_parent"
             android:padding="6dip">
-            <RelativeLayout
-                android:id="@+id/hidden_message"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:padding="12dip"
-                android:visibility="visible"
-                android:background="#8899CC00">
-                <TextView
-                    android:text="Loading..."
-                    android:id="@+id/hidden_message_text"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="#FF000000"
-                    android:textStyle="bold" />
-            </RelativeLayout>
             <TextView
                 android:id="@+id/name"
                 android:layout_height="fill_parent"
@@ -163,46 +148,9 @@
                 android:paddingLeft="20dip"
                 android:textSize="16sp" />
             <TextView
-                android:id="@+id/rating_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/description"
-                android:paddingRight="10dip"
-                android:textSize="16sp"
-                android:text="Rating:"
-                android:textStyle="bold" />
-            <TextView
-                android:id="@+id/rate_place"
-                android:layout_width="wrap_content"
-                android:layout_toRightOf="@+id/rating_label"
-                android:layout_below="@+id/description"
-                android:layout_height="wrap_content"
-                android:textColor="@color/link"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                android:paddingRight="10dip"
-                android:clickable="true"
-                android:onClick="onRateClick"
-                android:text="(Rate)" />
-            <RatingBar
-                android:id="@+id/rating"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/description"
-                android:layout_toRightOf="@+id/rate_place"
-                android:layout_centerVertical="true"
-                android:paddingTop="5dip"
-                android:paddingBottom="2dip"
-                android:numStars="5"
-                android:stepSize="1.0"
-                style="?android:attr/ratingBarStyleSmall"
-                android:onClick="onRateClick"
-                android:clickable="true"
-                android:rating="5" />
-            <TextView
                 android:id="@+id/reviews_label"
                 android:layout_width="wrap_content"
-                android:layout_below="@+id/rating"
+                android:layout_below="@+id/description"
                 android:layout_height="wrap_content"
                 android:paddingRight="10dip"
                 android:textSize="16sp"
@@ -211,7 +159,7 @@
             <TextView
                 android:id="@+id/write_review"
                 android:layout_width="wrap_content"
-                android:layout_below="@+id/rating"
+                android:layout_below="@+id/description"
                 android:layout_toRightOf="@+id/reviews_label"
                 android:layout_height="wrap_content"
                 android:textColor="@color/link"

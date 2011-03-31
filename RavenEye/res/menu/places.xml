@@ -10,10 +10,6 @@
         android:id="@+id/gallery"
         android:icon="@drawable/ic_menu_gallery"></item>
     <item
-        android:title="Rate Place"
-        android:id="@+id/rate"
-        android:icon="@drawable/ic_menu_upload"></item>
-    <item
         android:title="Write Review"
         android:id="@+id/review"
         android:icon="@drawable/ic_menu_edit"></item>
