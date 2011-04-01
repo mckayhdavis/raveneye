@@ -2,36 +2,39 @@
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_height="fill_parent"
-    android:layout_width="fill_parent">
+    android:layout_width="fill_parent"
+>
     <android.view.SurfaceView
         android:id="@+id/preview"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
+        android:layout_height="fill_parent"
+    >
     </android.view.SurfaceView>
     <com.reality.RealityOverlayView
         android:id="@+id/surface"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent">
+        android:layout_height="fill_parent"
+    >
     </com.reality.RealityOverlayView>
     <com.reality.RealitySmallCompassView
         android:id="@+id/compass"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|left"
-        android:layout_marginLeft="10dip"
-        android:layout_marginTop="10dip"
-        android:background="@drawable/compass">
+        android:layout_margin="10dp"
+        android:background="@drawable/compass"
+    >
     </com.reality.RealitySmallCompassView>
     <include
         android:id="@+id/place_description"
-        layout="@layout/reality_descriptor" />
+        layout="@layout/reality_descriptor"/>
     <ViewStub
         android:id="@+id/directions_stub"
         android:inflatedId="@+id/panel_import"
         android:layout="@layout/directions_view"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:layout_gravity="center" />
+        android:layout_gravity="center"/>
     <TextView
         android:id="@+id/reality_status_output"
         android:layout_width="wrap_content"
@@ -41,12 +44,14 @@
         android:textSize="10sp"
         android:text="Loading..."
         android:layout_margin="5dip"
-        android:layout_gravity="top|right"></TextView>
+        android:layout_gravity="top|right"
+    ></TextView>
     <TextView
         android:id="@+id/status_output"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="left|bottom"></TextView>
+        android:layout_gravity="left|bottom"
+    ></TextView>
     <ViewStub
         android:id="@+id/directions_status_stub"
         android:inflatedId="@+id/directions_status_view"
@@ -57,5 +62,5 @@
         android:layout_marginTop="30dip"
         android:layout_marginBottom="30dip"
         android:layout_marginRight="5dip"
-        android:layout_marginLeft="5dip" />
+        android:layout_marginLeft="5dip"/>
 </FrameLayout>
