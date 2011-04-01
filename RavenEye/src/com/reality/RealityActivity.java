@@ -92,7 +92,7 @@ public class RealityActivity extends Activity implements LocationListener,
 
 	public static final int ACQUIRE_GPS_TIMEOUT = 15000;
 	public static final int MIN_TIME_BETWEEN_LOCATION_UPDATES = 1500;
-	public static final int MIN_DISTANCE_BETWEEN_LOCATION_UPDATES = 0;
+	public static final int MIN_DISTANCE_BETWEEN_LOCATION_UPDATES = 1;
 
 	private RealityOverlayView mSurface;
 	private RealitySmallCompassView mCompassView;
@@ -111,7 +111,7 @@ public class RealityActivity extends Activity implements LocationListener,
 	private RealityLocationListener mLocationListener;
 	private RealityOrientationListener mOrientationListener;
 
-	private MenuItem mNavigationMenuItem;
+	private Menu mMenu;
 
 	private Timer mGpsTimer;
 
@@ -325,7 +325,12 @@ public class RealityActivity extends Activity implements LocationListener,
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.reality, menu);
 
-		mNavigationMenuItem = menu.getItem(0);
+		mMenu = menu;
+
+		if (mDirectionView != null
+				&& mDirectionView.getVisibility() == View.VISIBLE) {
+			menu.getItem(0).setVisible(true);
+		}
 
 		return true;
 	}
@@ -543,14 +548,15 @@ public class RealityActivity extends Activity implements LocationListener,
 			if (coord != null) {
 				new DownloadDirectionsTask().execute(place);
 
-				mNavigationMenuItem.setVisible(true);
+				if (mMenu != null) {
+					mMenu.getItem(0).setVisible(true);
+				}
 			}
 		}
 	}
 
 	public void onPlaceInfoClick(View v) {
 		Place place = mSurface.getSelectedPlace();
-		// TODO: Shouldn't ever be null...
 		if (place != null) {
 			Intent intent = new Intent(this, PlaceActivity.class);
 			intent.putExtra(Place.class.toString(), place);
@@ -612,11 +618,12 @@ public class RealityActivity extends Activity implements LocationListener,
 			// dismissDirectionOverlay();
 
 			Log.d(TAG, "Arrived at destination");
-			mTotalDistanceRemainingView.setBackgroundColor(Color.GREEN);
-			mTotalDistanceRemainingView.setText("Arrived!");
+			// mTotalDistanceRemainingView.setText("Arrived!");
+			mLegDistanceRemainingView.setBackgroundColor(Color.GREEN);
+			mLegDistanceRemainingView.setText("Arrived!");
 		} else {
-			mTotalDistanceRemainingView.setText(Place
-					.getDistanceString(event.distance));
+			// mTotalDistanceRemainingView.setText(Place
+			// .getDistanceString(event.distance));
 			mLegDistanceRemainingView.setText(Place
 					.getDistanceString(event.distance));
 		}
@@ -828,7 +835,7 @@ public class RealityActivity extends Activity implements LocationListener,
 				if (mDirectionView == null) {
 					mDirectionView = (RealityDirectionView) ((ViewStub) findViewById(R.id.directions_stub))
 							.inflate();
-					mDistanceStatusView = ((ViewStub) findViewById(R.id.directions_stub))
+					mDistanceStatusView = ((ViewStub) findViewById(R.id.directions_status_stub))
 							.inflate();
 					mTotalDistanceRemainingView = (TextView) (mDistanceStatusView
 							.findViewById(R.id.directions_totaldistance));
