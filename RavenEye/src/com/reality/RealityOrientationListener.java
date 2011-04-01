@@ -34,7 +34,7 @@ public class RealityOrientationListener implements SensorEventListener,
 	private float[] mI = new float[16];
 	private float[] mGravity = new float[] { 0, 0, 0 };
 	private float[] mGeomagnetic = new float[] { 0, 0, 0 };
-	private float[] mOldOrientation = new float[] { 0, 0, 0 };
+	private double[] mOldOrientation = new double[] { 0, 0, 0 };
 
 	private int mScaleDenominator = 180;
 
@@ -127,8 +127,8 @@ public class RealityOrientationListener implements SensorEventListener,
 		values[1] *= RAD_TO_DEG; // pitch
 		values[2] *= RAD_TO_DEG; // roll
 
-		final float[] oldValues = mOldOrientation;
-		float difference;
+		final double[] oldValues = mOldOrientation;
+		double difference;
 
 		for (int i = 0; i < 3; ++i) {
 			/*
@@ -152,28 +152,13 @@ public class RealityOrientationListener implements SensorEventListener,
 			}
 
 			difference /= mScaleDenominator;
-			values[i] = (float) ((oldValues[i] * (1 - difference)) + (values[i] * difference));
-
-			// else {
-			// /*
-			// * Initially the sensor values seem to be unstable (Possible
-			// * bug??). We use this filtering technique instead here. This
-			// * shouldn't run in this state for long and only seems to run
-			// * around NORTH.
-			// */
-			// values[i] = (float) ((oldValues[i] * (1 - difference)) +
-			// ((values[i] / Math
-			// .abs(values[i])) * difference));
-			//
-			// Log.e(TAG,
-			// "filterValues() - Orientation values are unstable. Attempting to correct values.");
-			// }
+			oldValues[i] = (oldValues[i] * (1 - difference)) + (values[i] * difference);
 		}
 
 		// Save the current values.
-		oldValues[0] = values[0];
-		oldValues[1] = values[1];
-		oldValues[2] = values[2];
+		values[0] = (float) oldValues[0];
+		values[1] = (float) oldValues[1];
+		values[2] = (float) oldValues[2];
 
 		// Convert the (-180,180] range to [0,360).
 		if (values[0] < 0) {

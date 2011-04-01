@@ -22,6 +22,7 @@ import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -99,6 +100,11 @@ public class ReviewListActivity extends ListActivity {
 
 		registerForContextMenu(listView);
 	}
+    
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+    }
 
 	public void refresh() {
 		try {
@@ -390,9 +396,6 @@ public class ReviewListActivity extends ListActivity {
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item
-				.getMenuInfo();
-		Place place = (Place) getListAdapter().getItem(info.position);
 		switch (item.getItemId()) {
 		case R.id.refresh:
 			((EndlessAdapter<?>) getListAdapter()).refresh();
@@ -425,7 +428,7 @@ public class ReviewListActivity extends ListActivity {
 	public boolean onContextItemSelected(MenuItem item) {
 		AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item
 				.getMenuInfo();
-		Review review = (Review) mAdapter.getItem(info.position);
+		Review review = (Review) getListAdapter().getItem(info.position);
 		switch (item.getItemId()) {
 		case R.id.report_review:
 			onReportClick(review);
@@ -443,7 +446,7 @@ public class ReviewListActivity extends ListActivity {
 					mReviews.remove(review);
 				}
 
-				mAdapter.notifyDataSetChanged();
+				((EndlessAdapter<Review>) getListAdapter()).notifyDataSetChanged();
 			}
 
 		});
@@ -463,7 +466,7 @@ public class ReviewListActivity extends ListActivity {
 						mPlace.addReview(review);
 					}
 
-					mAdapter.notifyDataSetChanged();
+					((EndlessAdapter<Review>) getListAdapter()).notifyDataSetChanged();
 					mReviewText.setText("");
 					mReviewText.clearFocus();
 					// mSubmitButton.setEnabled(false);
