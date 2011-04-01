@@ -160,6 +160,7 @@ public class RealityActivity extends Activity implements LocationListener,
 		mOrientationListener.registerForUpdates(mCompassView);
 
 		mLocationListener.registerForUpdates(this);
+		mLocationListener.registerForUpdates(mOrientationListener);
 		mLocationListener.registerForUpdates(mSurface);
 
 		mPlaceDescriptionView = findViewById(R.id.place_description);
@@ -643,9 +644,9 @@ public class RealityActivity extends Activity implements LocationListener,
 				showStatusLabel(DIALOG_DEFAULT_STATUS);
 			}
 
-			if (!mOrientationListener.hasLocation()) {
-				mOrientationListener.onLocationChanged(location);
-			}
+			// if (!mOrientationListener.hasLocation()) {
+			// mOrientationListener.onLocationChanged(location);
+			// }
 		}
 
 		mStatusLabel.setText("Accuracy: (" + ++mLocationCount + ") "
