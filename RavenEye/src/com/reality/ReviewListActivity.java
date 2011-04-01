@@ -33,6 +33,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
 import android.view.inputmethod.InputMethodManager;
@@ -64,6 +65,8 @@ public class ReviewListActivity extends ListActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		// Request progress bar
+		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 
 		setContentView(R.layout.review_list_activity);
 
@@ -235,6 +238,12 @@ public class ReviewListActivity extends ListActivity {
 	// }
 	// };
 
+	private static class ViewHolder {
+		TextView top;
+		TextView middle;
+		TextView bottomRight;
+	}
+
 	private class ReviewAdapter extends EndlessAdapter<Review> {
 
 		private RotateAnimation rotate = null;
@@ -255,7 +264,24 @@ public class ReviewListActivity extends ListActivity {
 
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
-			View v = convertView;
+			ViewHolder holder;
+
+			if (convertView == null) {
+				convertView = mInflater
+						.inflate(R.layout.review_list_item, null);
+
+				holder = new ViewHolder();
+				holder.top = (TextView) convertView.findViewById(R.id.title);
+				holder.middle = (TextView) convertView
+						.findViewById(R.id.content);
+				holder.bottomRight = (TextView) convertView
+						.findViewById(R.id.date);
+
+				convertView.setTag(holder);
+			} else {
+				holder = (ViewHolder) convertView.getTag();
+			}
+
 			String name = null;
 			String content = null;
 			String date = null;
@@ -263,8 +289,8 @@ public class ReviewListActivity extends ListActivity {
 			Review review = null;
 
 			synchronized (this) {
-				if (position < mReviews.size()) {
-					review = mReviews.get(position);
+				if (position < this.getItemCount()) {
+					review = (Review) this.getItem(position);
 				}
 			}
 
@@ -272,24 +298,16 @@ public class ReviewListActivity extends ListActivity {
 				name = review.title;
 				content = review.content;
 				date = review.date;
+
+				if (name != null)
+					holder.top.setText(name);
+				if (content != null)
+					holder.middle.setText(content);
+				if (date != null)
+					holder.bottomRight.setText(date);
 			}
 
-			if (v == null) {
-				v = mInflater.inflate(R.layout.review_list_item, null);
-			}
-
-			TextView titleText = (TextView) v.findViewById(R.id.title);
-			TextView contentText = (TextView) v.findViewById(R.id.content);
-			TextView dateText = (TextView) v.findViewById(R.id.date);
-
-			if (titleText != null)
-				titleText.setText(name);
-			if (contentText != null)
-				contentText.setText(content);
-			if (dateText != null)
-				dateText.setText(date);
-
-			return v;
+			return super.getView(position, convertView, parent);
 		}
 
 		@Override
@@ -312,12 +330,17 @@ public class ReviewListActivity extends ListActivity {
 		@Override
 		protected List<Review> cacheInBackground() {
 			try {
-				int offset = this.getDownloadOffset();
-				int limit = offset + 10;
+				runOnUiThread(new Runnable() {
+					public void run() {
+						setProgressBarIndeterminateVisibility(true);
+					}
+				});
 
 				URL aUrl = new URL(
-						"http://tailoredpages.com/raven/places.php?format=json&offset="
-								+ offset + "limit=" + limit);
+						"http://tailoredpages.com/raven/reviews.php?format=json&limit=10&place="
+								+ mPlace.id + "&content=basic&offset="
+								+ getDownloadOffset() + "&limit="
+								+ getDownloadLimit());
 				if (aUrl != null) {
 					List<Review> data = getReviews(aUrl);
 
@@ -353,6 +376,8 @@ public class ReviewListActivity extends ListActivity {
 				// web-service. Prevent the loading bar from continually
 				// showing.
 			}
+
+			setProgressBarIndeterminateVisibility(false);
 		}
 	}
 
@@ -365,10 +390,12 @@ public class ReviewListActivity extends ListActivity {
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		// Handle item selection
+		AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item
+				.getMenuInfo();
+		Place place = (Place) getListAdapter().getItem(info.position);
 		switch (item.getItemId()) {
 		case R.id.refresh:
-			refresh();
+			((EndlessAdapter<?>) getListAdapter()).refresh();
 			return true;
 		default:
 			return super.onOptionsItemSelected(item);
@@ -380,13 +407,17 @@ public class ReviewListActivity extends ListActivity {
 			ContextMenuInfo menuInfo) {
 		if (v.getId() == android.R.id.list) {
 			AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
+			@SuppressWarnings("unchecked")
+			EndlessAdapter<Review> adapter = (EndlessAdapter<Review>) getListAdapter();
 
-			Review r = (Review) mAdapter.getItem(info.position);
+			if (info.position < adapter.getItemCount()) {
+				Review r = (Review) adapter.getItem(info.position);
 
-			menu.setHeaderTitle(r.title);
-			super.onCreateContextMenu(menu, v, menuInfo);
-			MenuInflater inflater = getMenuInflater();
-			inflater.inflate(R.menu.review_context_menu, menu);
+				menu.setHeaderTitle(r.title);
+				super.onCreateContextMenu(menu, v, menuInfo);
+				MenuInflater inflater = getMenuInflater();
+				inflater.inflate(R.menu.review_context_menu, menu);
+			}
 		}
 	}
 

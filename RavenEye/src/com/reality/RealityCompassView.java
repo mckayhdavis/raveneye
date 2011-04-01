@@ -86,7 +86,7 @@ public class RealityCompassView extends SensorView {
 
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-		mPlaceRadius = w * 0.02f;
+		mPlaceRadius = w * 0.03f;
 		mRadius = (int) (w >> 1);
 
 		// TODO: memory leak possible here

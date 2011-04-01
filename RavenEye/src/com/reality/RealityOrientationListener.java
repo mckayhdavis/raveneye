@@ -10,7 +10,6 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
-import android.util.Log;
 
 /**
  * This class is responsible for interpreting the orientation of the device and
@@ -28,12 +27,16 @@ public class RealityOrientationListener implements SensorEventListener,
 	public static final float RAD_TO_DEG = (float) (180.0f / Math.PI);
 	public static final float DEG_TO_RAD = (float) (Math.PI / 180.0f);
 
+	private static final int DEFAULT_SCALE_RANGE = 180;
+
 	private float[] mR = new float[16];
 	private float[] mOutR = new float[16];
 	private float[] mI = new float[16];
 	private float[] mGravity = new float[] { 0, 0, 0 };
 	private float[] mGeomagnetic = new float[] { 0, 0, 0 };
 	private float[] mOldOrientation = new float[] { 0, 0, 0 };
+
+	private int mScaleDenominator = 180;
 
 	private float mDeclination = 0.0f;
 	private boolean mHasDeclination = false;
@@ -148,7 +151,7 @@ public class RealityOrientationListener implements SensorEventListener,
 				}
 			}
 
-			difference /= 180;
+			difference /= mScaleDenominator;
 			values[i] = (float) ((oldValues[i] * (1 - difference)) + (values[i] * difference));
 
 			// else {
@@ -203,6 +206,13 @@ public class RealityOrientationListener implements SensorEventListener,
 			mDeclination = field.getDeclination();
 
 			mHasDeclination = true;
+		}
+
+		float speed = location.getSpeed();
+		if (speed > 0) {
+			mScaleDenominator = (int) (DEFAULT_SCALE_RANGE + (speed * 10));
+		} else {
+			mScaleDenominator = DEFAULT_SCALE_RANGE;
 		}
 	}
 

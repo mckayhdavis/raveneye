@@ -59,7 +59,10 @@ abstract public class EndlessAdapter<T> extends AdapterWrapper {
 	private Context context;
 	private int pendingResource = -1;
 
-	protected int mDownloadOffset = 0;
+	private int mDownloadOffset = 0;
+	private int mDownloadLimit = DEFAULT_DOWNLOAD_LIMIT;
+
+	public static final int DEFAULT_DOWNLOAD_LIMIT = 10;
 
 	/**
 	 * Constructor wrapping a supplied ListAdapter
@@ -89,6 +92,10 @@ abstract public class EndlessAdapter<T> extends AdapterWrapper {
 
 	public int getDownloadOffset() {
 		return mDownloadOffset;
+	}
+
+	public int getDownloadLimit() {
+		return mDownloadLimit;
 	}
 
 	/**
@@ -195,7 +202,10 @@ abstract public class EndlessAdapter<T> extends AdapterWrapper {
 			List<T> result = null;
 
 			if (!append) {
+				mDownloadLimit = mDownloadOffset;
 				mDownloadOffset = 0;
+			} else {
+
 			}
 
 			try {
@@ -205,6 +215,8 @@ abstract public class EndlessAdapter<T> extends AdapterWrapper {
 
 			}
 
+			mDownloadLimit = DEFAULT_DOWNLOAD_LIMIT;
+
 			return (result);
 		}
 
@@ -213,10 +225,11 @@ abstract public class EndlessAdapter<T> extends AdapterWrapper {
 			if (data != null) {
 				addCachedData(data, append);
 
-				mDownloadOffset += data.size();
-
-				if (data.size() == 0) {
+				int len = data.size();
+				if (len < DEFAULT_DOWNLOAD_LIMIT) {
 					keepOnAppending.set(false);
+				} else {
+					mDownloadOffset += len;
 				}
 			} else {
 				// keepOnAppending.set(onException(pendingView, e));

@@ -1,10 +1,21 @@
 package com.reality;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -14,10 +25,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.hardware.Sensor;
-import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Criteria;
@@ -29,6 +40,8 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Debug;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -37,22 +50,19 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.common.BearingDirectionManager;
-import com.common.BearingWaypoint;
 import com.common.Coordinate;
 import com.common.DirectionEvent;
 import com.common.DirectionManager;
 import com.common.DirectionObserver;
 import com.common.Directions;
-import com.common.LocationDirectionManager;
-import com.common.LocationWaypoint;
+import com.common.HttpBuilder;
+import com.common.Leg;
 import com.common.Place;
-import com.common.Waypoint;
-import com.common.XmlLocationImporter;
 
 public class RealityActivity extends Activity implements LocationListener,
 		DirectionObserver {
@@ -65,8 +75,10 @@ public class RealityActivity extends Activity implements LocationListener,
 	private static final int DIALOG_LOADING_DIRECTIONS = 1;
 	private static final int DIALOG_GPS_UNAVAILABLE = 2;
 	private static final int DIALOG_DOWNLOADING_DIRECTIONS = 3;
-	private static final int DIALOG_DOWNLOADING_DIRECTIONS_FAILED = 4;
 	private static final int DIALOG_LOADING_MAPVIEW = 5;
+
+	private static final int TOAST_NETWORK_UNAVAILABLE = 20;
+	private static final int TOAST_DOWNLOADING_DIRECTIONS_FAILED = 4;
 
 	public static final String DIRECTIONS_FILE_NAME = "raven-graph";
 
@@ -76,7 +88,7 @@ public class RealityActivity extends Activity implements LocationListener,
 
 	private LocationManager mLocationManager;
 	private SensorManager mSensorManager;
-	private DirectionManager<?> mDirectionManager = null;
+	private DirectionManager mDirectionManager = null;
 
 	public static final int ACQUIRE_GPS_TIMEOUT = 15000;
 	public static final int MIN_TIME_BETWEEN_LOCATION_UPDATES = 1500;
@@ -85,10 +97,12 @@ public class RealityActivity extends Activity implements LocationListener,
 	private RealityOverlayView mSurface;
 	private RealitySmallCompassView mCompassView;
 	private RealityDirectionView mDirectionView = null;
+	private View mDistanceStatusView = null;
+	private TextView mTotalDistanceRemainingView = null;
+	private TextView mLegDistanceRemainingView = null;
 
 	private TextView mRealityStatusLabel;
 	private TextView mStatusLabel;
-	private TextView mDirectionsLabel;
 
 	private View mPlaceDescriptionView;
 	private TextView mTitleView;
@@ -96,6 +110,8 @@ public class RealityActivity extends Activity implements LocationListener,
 
 	private RealityLocationListener mLocationListener;
 	private RealityOrientationListener mOrientationListener;
+
+	private MenuItem mNavigationMenuItem;
 
 	private Timer mGpsTimer;
 
@@ -125,7 +141,6 @@ public class RealityActivity extends Activity implements LocationListener,
 		mCompassView = (RealitySmallCompassView) findViewById(R.id.compass);
 		mRealityStatusLabel = (TextView) findViewById(R.id.reality_status_output);
 		mStatusLabel = (TextView) findViewById(R.id.status_output);
-		mDirectionsLabel = (TextView) findViewById(R.id.directions_output);
 
 		mSurface.registerForUpdates(mCompassView);
 
@@ -309,6 +324,9 @@ public class RealityActivity extends Activity implements LocationListener,
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.reality, menu);
+
+		mNavigationMenuItem = menu.getItem(0);
+
 		return true;
 	}
 
@@ -317,12 +335,8 @@ public class RealityActivity extends Activity implements LocationListener,
 		// Handle item selection
 		switch (item.getItemId()) {
 		case R.id.navigate:
-			if (mDirectionView == null
-					|| mDirectionView.getVisibility() == View.GONE) {
-				new DownloadDirectionsTask().execute((Place) null);
-			} else {
-				dismissDirectionOverlay();
-			}
+			dismissDirectionOverlay();
+			item.setVisible(false);
 			return true;
 		case R.id.directory:
 			onDirectoryClick(null);
@@ -411,6 +425,41 @@ public class RealityActivity extends Activity implements LocationListener,
 	 * Dialog methods.
 	 */
 
+	private void showToast(int id) {
+		onCreateToast(id).show();
+	}
+
+	protected Toast onCreateToast(int id) {
+		LayoutInflater inflator = this.getLayoutInflater();
+		View layout = inflator.inflate(R.layout.toast_alert,
+				(ViewGroup) findViewById(R.id.toast_layout_root));
+		TextView text = (TextView) layout.findViewById(R.id.text);
+
+		Toast toast;
+		switch (id) {
+		case TOAST_DOWNLOADING_DIRECTIONS_FAILED:
+			text.setText("Unable to download directions.");
+
+			toast = new Toast(getApplicationContext());
+			toast.setGravity(Gravity.CENTER_VERTICAL, 0, 0);
+			toast.setDuration(Toast.LENGTH_LONG);
+			toast.setView(layout);
+			break;
+		case TOAST_NETWORK_UNAVAILABLE:
+			text.setText("Network connection lost.");
+
+			toast = new Toast(getApplicationContext());
+			toast.setGravity(Gravity.CENTER_VERTICAL, 0, 0);
+			toast.setDuration(Toast.LENGTH_LONG);
+			toast.setView(layout);
+			break;
+		default:
+			toast = null;
+		}
+
+		return toast;
+	}
+
 	protected Dialog onCreateDialog(int id) {
 		Dialog dialog;
 		switch (id) {
@@ -441,19 +490,6 @@ public class RealityActivity extends Activity implements LocationListener,
 			dialog = ProgressDialog.show(this, null,
 					"Downloading directions. Please wait...");
 			dialog.setCancelable(true);
-			break;
-		case DIALOG_DOWNLOADING_DIRECTIONS_FAILED:
-			builder = new AlertDialog.Builder(this);
-			builder.setTitle("No directions found")
-					.setCancelable(true)
-					.setNegativeButton("Okay",
-							new DialogInterface.OnClickListener() {
-								public void onClick(DialogInterface dialog,
-										int id) {
-									dialog.cancel();
-								}
-							});
-			dialog = builder.create();
 			break;
 		case DIALOG_LOADING_MAPVIEW:
 			builder = new AlertDialog.Builder(this);
@@ -506,6 +542,8 @@ public class RealityActivity extends Activity implements LocationListener,
 			Coordinate coord = place.coordinate;
 			if (coord != null) {
 				new DownloadDirectionsTask().execute(place);
+
+				mNavigationMenuItem.setVisible(true);
 			}
 		}
 	}
@@ -528,7 +566,7 @@ public class RealityActivity extends Activity implements LocationListener,
 		mDirectionView.setVisibility(View.GONE);
 		mDirectionView.setWillNotDraw(true);
 
-		mDirectionsLabel.setVisibility(View.GONE);
+		mDistanceStatusView.setVisibility(View.GONE);
 		mDirectionManager = null;
 
 		// TODO: stop tracing
@@ -574,11 +612,13 @@ public class RealityActivity extends Activity implements LocationListener,
 			// dismissDirectionOverlay();
 
 			Log.d(TAG, "Arrived at destination");
-			mDirectionsLabel
-					.setBackgroundResource(R.drawable.rounded_directions_arrived);
-			mDirectionsLabel.setText("Arrived!");
+			mTotalDistanceRemainingView.setBackgroundColor(Color.GREEN);
+			mTotalDistanceRemainingView.setText("Arrived!");
 		} else {
-			mDirectionsLabel.setText(Place.getDistanceString(event.distance));
+			mTotalDistanceRemainingView.setText(Place
+					.getDistanceString(event.distance));
+			mLegDistanceRemainingView.setText(Place
+					.getDistanceString(event.distance));
 		}
 	}
 
@@ -701,31 +741,63 @@ public class RealityActivity extends Activity implements LocationListener,
 
 	}
 
+	/*
+	 * Download the directions from the current location to the given place's
+	 * location.
+	 */
 	private class DownloadDirectionsTask extends
-			AsyncTask<Place, Void, Waypoint> {
-		protected Waypoint doInBackground(Place... place) {
+			AsyncTask<Place, Void, List<Leg>> {
+		protected List<Leg> doInBackground(Place... place) {
 			runOnUiThread(new Runnable() {
 				public void run() {
 					showDialog(DIALOG_DOWNLOADING_DIRECTIONS);
 				}
 			});
 
+			Place aPlace = place[0];
+			if (aPlace != null) {
+				try {
+					Location loc = mLocationListener.getLastKnownLocation();
+					String origin = loc.getLatitude() + ","
+							+ loc.getLongitude();
+
+					Coordinate coordinate = aPlace.coordinate;
+					String destination = coordinate.latitude + ","
+							+ coordinate.longitude;
+
+					URL aUrl = new URL(
+							"http://maps.googleapis.com/maps/api/directions/json?origin="
+									+ origin + "&destination=" + destination
+									+ "&sensor=true");
+
+					return getDirections(aUrl);
+				} catch (Exception e) {
+					Log.e(TAG, e.toString());
+
+					runOnUiThread(new Runnable() {
+						public void run() {
+							showToast(TOAST_NETWORK_UNAVAILABLE);
+						}
+					});
+				}
+			}
+
 			return null;
 		}
 
-		protected void onPostExecute(final Waypoint waypoint) {
+		@SuppressWarnings("unchecked")
+		protected void onPostExecute(final List<Leg> waypoints) {
 			dismissDialog(DIALOG_DOWNLOADING_DIRECTIONS);
 
-			new GenerateDirectionsTask().execute(waypoint);
+			new GenerateDirectionsTask().execute(waypoints);
 		}
 
 	}
 
 	private class GenerateDirectionsTask extends
-			AsyncTask<Waypoint, Void, DirectionManager> {
-		protected DirectionManager doInBackground(Waypoint... placeWaypoint) {
-			DirectionManager directionManager = null;
-			Waypoint startWaypoint;
+			AsyncTask<List<Leg>, Void, DirectionManager> {
+		protected DirectionManager doInBackground(List<Leg>... placeWaypoint) {
+			List<Leg> waypoints = placeWaypoint[0];
 
 			runOnUiThread(new Runnable() {
 				public void run() {
@@ -733,67 +805,20 @@ public class RealityActivity extends Activity implements LocationListener,
 				}
 			});
 
-			if (placeWaypoint[0] == null) {
-				// Download the way-points.
-				try {
-					startWaypoint = new XmlLocationImporter()
-							.readFromFile(DIRECTIONS_FILE_NAME);
-
-					directionManager = getDirections((LocationWaypoint) startWaypoint);
-				} catch (IOException e) {
-					Toast.makeText(RealityActivity.this,
-							"Error reading from directions", Toast.LENGTH_LONG);
-
-					Log.e(TAG, "Error reading from serialized object.");
-				}
-			} else {
-				Place place = placeWaypoint[0].getPlace();
-				if (place != null) {
-					Coordinate coord = place.coordinate;
-					if (coord != null) {
-						// Use a coordinate.
-						startWaypoint = new LocationWaypoint(coord);
-
-						directionManager = getDirections((LocationWaypoint) startWaypoint);
-					} else {
-						// TODO: Otherwise, use a bearing (if any).
-						float bearing = place.bearing;
-						if (bearing >= 0) {
-							startWaypoint = new BearingWaypoint(bearing);
-
-							directionManager = getDirections((BearingWaypoint) startWaypoint);
-						}
-					}
-				}
+			if (waypoints != null) {
+				return getDirections(waypoints);
 			}
 
-			return directionManager;
-		}
-
-		private DirectionManager getDirections(LocationWaypoint waypoint) {
-			if (waypoint != null) {
-				Directions<LocationWaypoint> directions = new Directions<LocationWaypoint>(
-						waypoint);
-
-				LocationDirectionManager manager = new LocationDirectionManager();
-				manager.setDirections(directions);
-
-				return manager;
-			}
 			return null;
 		}
 
-		private DirectionManager getDirections(BearingWaypoint waypoint) {
-			if (waypoint != null) {
-				Directions<BearingWaypoint> directions = new Directions<BearingWaypoint>(
-						waypoint);
+		private DirectionManager getDirections(List<Leg> waypoints) {
+			Directions<Leg> directions = new Directions<Leg>(waypoints);
 
-				BearingDirectionManager manager = new BearingDirectionManager();
-				manager.setDirections(directions);
+			DirectionManager manager = new DirectionManager();
+			manager.setDirections(directions);
 
-				return manager;
-			}
-			return null;
+			return manager;
 		}
 
 		protected void onPostExecute(final DirectionManager directionManager) {
@@ -803,12 +828,17 @@ public class RealityActivity extends Activity implements LocationListener,
 				if (mDirectionView == null) {
 					mDirectionView = (RealityDirectionView) ((ViewStub) findViewById(R.id.directions_stub))
 							.inflate();
+					mDistanceStatusView = ((ViewStub) findViewById(R.id.directions_stub))
+							.inflate();
+					mTotalDistanceRemainingView = (TextView) (mDistanceStatusView
+							.findViewById(R.id.directions_totaldistance));
+					mLegDistanceRemainingView = (TextView) (mDistanceStatusView
+							.findViewById(R.id.directions_legdistance));
 				} else {
 					mDirectionView.setVisibility(View.VISIBLE);
+					mDistanceStatusView.setVisibility(View.VISIBLE);
 				}
 				mDirectionView.setWillNotDraw(false);
-
-				mDirectionsLabel.setVisibility(View.VISIBLE);
 
 				directionManager.registerObserver(mDirectionView);
 				directionManager.registerObserver(RealityActivity.this);
@@ -816,13 +846,78 @@ public class RealityActivity extends Activity implements LocationListener,
 				mOrientationListener.registerForUpdates(mDirectionView);
 
 				registerDirectionManager(directionManager);
-
-				// TODO: start tracing to "/sdcard/calc.trace"
-				Debug.startMethodTracing("calc");
 			} else {
-				showDialog(DIALOG_DOWNLOADING_DIRECTIONS_FAILED);
+				showToast(TOAST_DOWNLOADING_DIRECTIONS_FAILED);
 			}
 		}
 	}
 
+	private List<Leg> getDirections(URL url) throws IllegalStateException,
+			IOException, JSONException {
+		final HttpClient httpclient = new DefaultHttpClient();
+		final HttpGet httpget = new HttpGet(url.toString());
+		HttpResponse response;
+
+		response = httpclient.execute(httpget);
+
+		// Examine the response status.
+		Log.i(TAG, response.getStatusLine().toString());
+
+		// Get hold of the response entity.
+		HttpEntity entity = response.getEntity();
+		// If the response does not enclose an entity, there is no need
+		// to worry about connection release.
+
+		if (entity != null) {
+			List<Leg> waypoints = new ArrayList<Leg>();
+
+			// A Simple JSON Response Read
+			InputStream instream = entity.getContent();
+			String result = HttpBuilder.convertStreamToString(instream);
+
+			// A Simple JSONObject Creation
+			JSONObject json = new JSONObject(result);
+
+			JSONArray routes = json.getJSONArray("routes");
+			JSONArray legs, steps;
+			JSONObject startLocation, endLocation;
+
+			int len = routes.length();
+			for (int i = 0; i < len; i++) {
+				legs = routes.getJSONObject(i).getJSONArray("legs");
+
+				int len2 = legs.length();
+				for (int j = 0; j < len2; j++) {
+					steps = legs.getJSONObject(j).getJSONArray("steps");
+
+					int len3 = steps.length();
+					for (int k = 0; k < len3; k++) {
+						startLocation = steps.getJSONObject(k).getJSONObject(
+								"start_location");
+						endLocation = steps.getJSONObject(k).getJSONObject(
+								"start_location");
+
+						Coordinate start = new Coordinate(
+								Double.parseDouble(startLocation
+										.getString("lat")),
+								Double.parseDouble(startLocation
+										.getString("lng")));
+
+						Coordinate end = new Coordinate(
+								Double.parseDouble(endLocation.getString("lat")),
+								Double.parseDouble(endLocation.getString("lng")));
+
+						Leg waypoint = new Leg(start, end);
+						waypoints.add(waypoint);
+					}
+				}
+			}
+			// Closing the input stream will trigger connection release
+			instream.close();
+
+			return waypoints;
+		}
+
+		return null;
+	}
 }
