@@ -1,47 +1,25 @@
 package com.common;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
-public abstract class Waypoint implements Serializable {
+public class Leg implements Serializable {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 
-	// Usually a way-point has at most 4 neighbors.
-	private List<Waypoint> mNeighbours = new ArrayList<Waypoint>(4);
+	public final Coordinate start;
+	public final Coordinate end;
+
 	private Place mPlace = null;
+	private boolean mVisited = false;
 
 	public transient int id;
 
-	private boolean mVisited = false;
-
-	public int numberOfChildren() {
-		return mNeighbours.size();
-	}
-
-	public List<Waypoint> getNeighbours() {
-		return mNeighbours;
-	}
-
-	public Waypoint next(int index) {
-		return mNeighbours.get(index);
-	}
-
-	public Waypoint next() {
-		if (mNeighbours.size() > 0) {
-			return mNeighbours.get(0);
-		}
-		return null;
-	}
-
-	public void addNext(Waypoint waypoint) {
-		mNeighbours.add(waypoint);
-
-		waypoint.mNeighbours.add(this);
+	public Leg(Coordinate start, Coordinate end) {
+		this.start = start;
+		this.end = end;
 	}
 
 	public boolean isVisited() {

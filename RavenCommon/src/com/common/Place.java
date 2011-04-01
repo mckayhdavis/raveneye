@@ -9,31 +9,31 @@ import android.location.Location;
 
 public class Place implements Comparable<Place>, Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	public final int id;
 	public final String name;
-	public final String description;
-	public final String buildingCode;
 	public final Coordinate coordinate;
 
 	public float distance = -1;
+	public String description = null;
+	public String buildingCode = null;
+	private ArrayList<Review> mReviews = null;
+
 	public transient float bearing = -1;
 	private transient Drawable mImageResource = null;
 	private transient int mImageResourceId = -1;
 
-	private ArrayList<Review> mReviews = null;
-
-	public Place(String name, String description, String buildingCode,
-			Coordinate coordinate) {
+	public Place(int id, String name, Coordinate coordinate) {
+		this.id = id;
 		this.name = name;
-		this.description = description;
-		this.buildingCode = buildingCode;
 		this.coordinate = coordinate;
-
-		addReview(new Review("Review 1", "Lorem ipsum...", "4 Sep 2010"));
-		addReview(new Review("Review 2", "Dolar sit...", "20 Sep 2010"));
-		addReview(new Review("Review 3", "Dolar sit amor...", "1 Jan 2011"));
 	}
 
-	public void addReviews(List reviews) {
+	public void addReviews(List<Review> reviews) {
 		if (mReviews == null) {
 			mReviews = new ArrayList<Review>();
 		}
@@ -53,7 +53,7 @@ public class Place implements Comparable<Place>, Serializable {
 	 * @param number
 	 * @return
 	 */
-	public ArrayList<Review> getReviews(int number) {
+	public List<Review> getReviews(int number) {
 		if (mReviews != null && number > 0) {
 			int size = mReviews.size();
 			if (number > size) {

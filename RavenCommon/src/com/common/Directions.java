@@ -1,11 +1,8 @@
 package com.common;
 
-import java.util.Dictionary;
-import java.util.Hashtable;
+import java.util.List;
 
-import android.util.Log;
-
-public class Directions<T extends Waypoint> {
+public class Directions<T extends Leg> {
 
 	public static final String TAG = DirectionManager.TAG;
 
@@ -13,54 +10,29 @@ public class Directions<T extends Waypoint> {
 	 * The way-points to a particular destination. The destination is always the
 	 * last way-point.
 	 */
-	private final Dictionary<T, T> mWaypoints = new Hashtable<T, T>();
+	private final List<T> mWaypoints;
+	// private final Dictionary<T, T> mWaypoints = new Hashtable<T, T>();
 
-	private volatile T mPreviousWaypoint;
-	private volatile T mCurrentWaypoint;
+	private volatile int mCurrentWaypointIndex;
 
-	public Directions(T start) {
-		mPreviousWaypoint = null;
-		mCurrentWaypoint = start;
+	public Directions(List<T> waypoints) {
+		mWaypoints = waypoints;
 	}
 
-	public Dictionary<T, T> getWaypoints() {
+	public List<T> getWaypoints() {
 		return mWaypoints;
 	}
 
 	public T currentWaypoint() {
-		return mCurrentWaypoint;
+		return mWaypoints.get(mCurrentWaypointIndex);
 	}
 
 	public T nextWaypoint() {
-		T prevWaypoint = mPreviousWaypoint;
-		T nextWaypoint = null;
-
-		mCurrentWaypoint.visit();
-
-		if (prevWaypoint != null) {
-			for (Waypoint waypoint : mCurrentWaypoint.getNeighbours()) {
-				if (!waypoint.isVisited() && prevWaypoint != waypoint) {
-					nextWaypoint = (T) waypoint;
-					break;
-				}
-			}
-			Log.d(TAG, "Got next waypoint");
-		} else {
-			mCurrentWaypoint = (T) mCurrentWaypoint.next();
+		if ((mCurrentWaypointIndex + 1) < mWaypoints.size()) {
+			return mWaypoints.get(++mCurrentWaypointIndex);
 		}
 
-		mCurrentWaypoint = nextWaypoint;
-
-		return nextWaypoint;
-	}
-
-	public boolean selectWaypoint(T waypoint) {
-		waypoint = mWaypoints.get(waypoint);
-		if (waypoint != null) {
-			mCurrentWaypoint = waypoint;
-			return true;
-		}
-		return false;
+		return null;
 	}
 
 }
