@@ -67,7 +67,7 @@ public class PlaceListActivity extends ListActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
+
 		// Request progress bar
 		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 
@@ -83,11 +83,11 @@ public class PlaceListActivity extends ListActivity {
 	public void onResume() {
 		super.onResume();
 	}
-    
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-    }
+
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+	}
 
 	private List<Place> getPlaces(URL url) {
 		final HttpClient httpclient = new DefaultHttpClient();
