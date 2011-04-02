@@ -7,7 +7,7 @@
     <item
         android:title="View Reality"
         android:id="@+id/reality"
-        android:icon="@drawable/ic_menu_directions"></item>
+        android:icon="@drawable/ic_menu_globe"></item>
     <item
         android:title="Show Map"
         android:id="@+id/map"

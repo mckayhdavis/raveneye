@@ -6,6 +6,10 @@
         android:id="@+id/directory"
         android:icon="@drawable/ic_menu_small_tiles"></item>
     <item
+        android:title="View Reality"
+        android:id="@+id/reality"
+        android:icon="@drawable/ic_menu_globe"></item>
+    <item
         android:title="View Gallery"
         android:id="@+id/gallery"
         android:icon="@drawable/ic_menu_gallery"></item>
