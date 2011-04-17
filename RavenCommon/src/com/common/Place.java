@@ -14,6 +14,8 @@ public class Place implements Comparable<Place>, Serializable {
 	 */
 	private static final long serialVersionUID = 1L;
 
+	public static final String NO_DISTANCE_STRING = "Unknown";
+
 	public final int id;
 	public final String name;
 	public final Coordinate coordinate;
@@ -89,7 +91,9 @@ public class Place implements Comparable<Place>, Serializable {
 
 	public static String getDistanceString(float distance) {
 		String units;
-		if (distance < 1000) {
+		if (distance < 0) {
+			return NO_DISTANCE_STRING;
+		} else if (distance < 1000) {
 			units = (int) distance + "m";
 		} else {
 			distance = (int) (distance / 100);
