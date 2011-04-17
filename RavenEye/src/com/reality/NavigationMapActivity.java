@@ -24,17 +24,21 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.ImageButton;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.common.Coordinate;
 import com.common.Place;
 import com.google.android.maps.GeoPoint;
+import com.google.android.maps.ItemizedOverlay;
 import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
 import com.google.android.maps.MyLocationOverlay;
 import com.google.android.maps.Overlay;
-import com.google.android.maps.OverlayItem;
 
 public class NavigationMapActivity extends MapActivity {
 
@@ -49,7 +53,7 @@ public class NavigationMapActivity extends MapActivity {
 
 	private final List<Place> mPlaces = new ArrayList<Place>();
 
-	private boolean mUseLocationForPosition = true;
+	private boolean mUseLocationForPosition = false;
 
 	// Carleton University GPS coordinates.
 	public static final GeoPoint DEFAULT_LOCATION = new GeoPoint(45386018,
@@ -131,43 +135,36 @@ public class NavigationMapActivity extends MapActivity {
 	private class DownloadPlacesTask extends
 			AsyncTask<Object[], Void, List<Place>> {
 		protected List<Place> doInBackground(Object[]... p) {
-			runOnUiThread(new Runnable() {
-				public void run() {
-					showDialog(DIALOG_LOADING);
-				}
-			});
-
 			Object[] places = p[0];
 			if (places != null) {
 				GeoPoint point = null;
 				Place place;
+
+				Drawable drawable = NavigationMapActivity.this.getResources()
+						.getDrawable(R.drawable.flag_green_icon);
+				NavigationItemizedOverlay itemizedOverlay = new NavigationItemizedOverlay(
+						drawable);
+
 				for (Object o : places) {
 					place = (Place) o;
 					mPlaces.add(place);
 
 					if (place.coordinate != null) {
-						Drawable drawable = NavigationMapActivity.this
-								.getResources().getDrawable(
-										R.drawable.flag_green_icon);
-						NavigationItemizedOverlay itemizedOverlay = new NavigationItemizedOverlay(
-								drawable, NavigationMapActivity.this);
-
 						Coordinate coordinate = place.coordinate;
 
 						point = new GeoPoint((int) (coordinate.latitude * 1E6),
 								(int) (coordinate.longitude * 1E6));
-						OverlayItem overlayItem = new OverlayItem(point,
-								place.name, place.description);
+						PlaceOverlayItem overlayItem = new PlaceOverlayItem(
+								point, place);
 
 						itemizedOverlay.addOverlay(overlayItem);
-						mMapOverlays.add(itemizedOverlay);
 					}
 				}
+				mMapOverlays.add(itemizedOverlay);
 
 				if (point != null) {
 					mMapController.animateTo(point);
-					mMapController.zoomToSpan(point.getLatitudeE6(),
-							point.getLongitudeE6());
+					mMapController.setZoom(DEFAULT_ZOOM_LEVEL);
 				}
 			}
 
@@ -178,9 +175,7 @@ public class NavigationMapActivity extends MapActivity {
 			runOnUiThread(new Runnable() {
 
 				public void run() {
-					dismissDialog(DIALOG_LOADING);
 
-					onMyLocationClick(null);
 				}
 
 			});
@@ -336,12 +331,6 @@ public class NavigationMapActivity extends MapActivity {
 		case R.id.places:
 			onPlacesClick(mMapView);
 			return true;
-		case R.id.directions:
-			onDirectionsClick(mMapView);
-			return true;
-		case R.id.settings:
-			onSettingsClick(mMapView);
-			return true;
 		default:
 			return super.onOptionsItemSelected(item);
 		}
@@ -367,21 +356,107 @@ public class NavigationMapActivity extends MapActivity {
 		this.startActivity(new Intent(this, PlaceListActivity.class));
 	}
 
-	public void onDirectionsClick(View v) {
-		showDialog(DIALOG_LOADING);
-
-		Intent intent = new Intent(this, RealityActivity.class);
-		intent.putExtra(Place.class.toString(), mPlaces.toArray());
-
-		this.startActivity(intent);
-	}
-
 	public void onClearMapClick(View v) {
 
 	}
 
 	public void onSettingsClick(View v) {
 
+	}
+
+	/*
+	 * 
+	 */
+
+	class NavigationItemizedOverlay extends ItemizedOverlay<PlaceOverlayItem> {
+
+		private ArrayList<PlaceOverlayItem> mOverlays = new ArrayList<PlaceOverlayItem>();
+
+		public NavigationItemizedOverlay(Drawable defaultMarker) {
+			super(boundCenterBottom(defaultMarker));
+		}
+
+		/**
+		 * Add an overlay to the overlay list.
+		 * 
+		 * @param overlay
+		 *            the OverlayItem to be added
+		 */
+		public void addOverlay(PlaceOverlayItem overlay) {
+			mOverlays.add(overlay);
+			populate();
+		}
+
+		@Override
+		protected PlaceOverlayItem createItem(int i) {
+			return mOverlays.get(i);
+		}
+
+		/**
+		 * @return the current number of overlay items.
+		 */
+		@Override
+		public int size() {
+			return mOverlays.size();
+		}
+
+		/*
+		 * Handle the event when an item is tapped by the user.
+		 */
+		@Override
+		protected boolean onTap(int index) {
+			PlaceOverlayItem item = mOverlays.get(index);
+			final Place place = item.place;
+
+			Dialog dialog = new Dialog(NavigationMapActivity.this);
+			dialog.setContentView(R.layout.reality_descriptor);
+
+			RelativeLayout layout = (RelativeLayout) dialog
+					.findViewById(R.id.frame);
+			layout.setVisibility(View.VISIBLE);
+
+			TextView title = (TextView) dialog.findViewById(R.id.title);
+			TextView description = (TextView) dialog
+					.findViewById(R.id.description);
+
+			ImageButton navigateButton = (ImageButton) dialog
+					.findViewById(R.id.navigate_button);
+			ImageButton moreButton = (ImageButton) dialog
+					.findViewById(R.id.more_button);
+
+			navigateButton.setOnClickListener(new OnClickListener() {
+
+				public void onClick(View v) {
+					Intent intent = new Intent(getApplicationContext(),
+							RealityActivity.class);
+
+					intent.putExtra("type", RealityActivity.TYPE_DIRECTIONS);
+					intent.putExtra(Place.class.toString(),
+							new Object[] { place });
+
+					startActivity(intent);
+				}
+
+			});
+			moreButton.setOnClickListener(new OnClickListener() {
+
+				public void onClick(View v) {
+					Intent intent = new Intent(NavigationMapActivity.this,
+							PlaceActivity.class);
+					intent.putExtra(Place.class.toString(), place);
+
+					startActivity(intent);
+				}
+
+			});
+
+			title.setText(item.getTitle());
+			description.setText(item.getSnippet());
+
+			dialog.show();
+
+			return true;
+		}
 	}
 
 }

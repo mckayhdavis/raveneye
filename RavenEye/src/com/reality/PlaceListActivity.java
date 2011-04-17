@@ -271,11 +271,11 @@ public class PlaceListActivity extends ListActivity {
 
 				holder = new ViewHolder();
 				holder.icon = (ImageView) convertView.findViewById(R.id.icon);
-				holder.top = (TextView) convertView.findViewById(R.id.top_text);
+				holder.top = (TextView) convertView.findViewById(R.id.title);
 				holder.bottom = (TextView) convertView
-						.findViewById(R.id.bottom_text);
+						.findViewById(R.id.description);
 				holder.bottomRight = (TextView) convertView
-						.findViewById(R.id.bottom_right_text);
+						.findViewById(R.id.caption);
 
 				convertView.setTag(holder);
 			} else {
@@ -306,8 +306,9 @@ public class PlaceListActivity extends ListActivity {
 				if (distance >= 0) {
 					holder.bottom.setText("Distance: "
 							+ Place.getDistanceString(distance));
+					holder.bottom.setVisibility(View.VISIBLE);
 				} else {
-					holder.bottom.setText(EMPTY_STRING);
+					holder.bottom.setVisibility(View.GONE);
 				}
 				String buildingCode = place.buildingCode;
 				if (buildingCode != null) {
@@ -499,7 +500,13 @@ public class PlaceListActivity extends ListActivity {
 	}
 
 	public void onDirectionsClick(Place place) {
+		Intent intent = new Intent(getApplicationContext(),
+				RealityActivity.class);
 
+		intent.putExtra("type", RealityActivity.TYPE_DIRECTIONS);
+		intent.putExtra(Place.class.toString(), new Object[] { place });
+
+		this.startActivity(intent);
 	}
 
 }

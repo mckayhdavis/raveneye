@@ -55,8 +55,9 @@ public class RealityOverlayView extends LayoutSensorView {
 	public static final int COMPASS_TEXT_SIZE = 46;
 	public static final float PLACE_RADIUS_SCALE = 0.09f;
 
-	private ArrayList<PlaceOverlayWrapper> mPlaceOverlays;
-	private ArrayList<SensorView> mSensorViews;
+	private final List<Place> mPlaces;
+	private final List<PlaceOverlayWrapper> mPlaceOverlays;
+	private final List<SensorView> mSensorViews;
 
 	private Dictionary<PlaceOverlayWrapper, TouchPoint> mPlacePositions;
 
@@ -102,6 +103,7 @@ public class RealityOverlayView extends LayoutSensorView {
 	public RealityOverlayView(Context context, AttributeSet attr) {
 		super(context, attr);
 
+		mPlaces = new ArrayList<Place>();
 		mPlaceOverlays = new ArrayList<PlaceOverlayWrapper>();
 		mSensorViews = new ArrayList<SensorView>(1);
 
@@ -142,7 +144,11 @@ public class RealityOverlayView extends LayoutSensorView {
 	}
 
 	public int getPlacesCount() {
-		return mPlaceOverlays.size();
+		return mPlaces.size();
+	}
+
+	public List<Place> getPlaces() {
+		return mPlaces;
 	}
 
 	public Place getSelectedPlace() {
@@ -150,13 +156,17 @@ public class RealityOverlayView extends LayoutSensorView {
 	}
 
 	public void setSelecetedPlace(int index) {
-		mSelectedPlace = mPlaceOverlays.get(index).place;
+		mSelectedPlace = mPlaces.get(index);
 	}
 
 	public void addAllOverlays(List<Place> places) {
 		int len = places.size();
+		Place place;
 		for (int i = 0; i < len; ++i) {
-			mPlaceOverlays.add(new PlaceOverlayWrapper(places.get(i)));
+			place = places.get(i);
+
+			mPlaces.add(place);
+			mPlaceOverlays.add(new PlaceOverlayWrapper(place));
 		}
 	}
 
@@ -429,7 +439,7 @@ public class RealityOverlayView extends LayoutSensorView {
 			// int bottom = y + halfHeight;
 
 			synchronized (this) {
-				// Add the place to the hash table.
+				// Add the place to the hash table or edit the existing values.
 				TouchPoint tPoint = mPlacePositions.get(placeWrapper);
 				if (tPoint != null) {
 					tPoint.x = x;

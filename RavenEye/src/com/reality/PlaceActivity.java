@@ -29,6 +29,8 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -37,6 +39,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -71,6 +74,7 @@ public class PlaceActivity extends ListActivity {
 		final TextView title = (TextView) findViewById(R.id.title);
 
 		setListAdapter(new PlaceAdapter(mData));
+		registerForContextMenu(getListView());
 
 		Bundle extras = getIntent().getExtras();
 		if (extras != null) {
@@ -416,49 +420,37 @@ public class PlaceActivity extends ListActivity {
 		}
 	}
 
-	// @Override
-	// public void onCreateContextMenu(ContextMenu menu, View v,
-	// ContextMenuInfo menuInfo) {
-	// if (v.getId() == android.R.id.list) {
-	// AdapterView.AdapterContextMenuInfo info =
-	// (AdapterView.AdapterContextMenuInfo) menuInfo;
-	// @SuppressWarnings("unchecked")
-	// EndlessAdapter<Place> adapter = (EndlessAdapter<Place>) getListAdapter();
-	//
-	// if (info.position < adapter.getItemCount()) {
-	// Place p = (Place) adapter.getItem(info.position);
-	//
-	// menu.setHeaderTitle(p.name);
-	// super.onCreateContextMenu(menu, v, menuInfo);
-	// MenuInflater inflater = getMenuInflater();
-	// inflater.inflate(R.menu.places_context_menu, menu);
-	// }
-	// }
-	// }
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v,
+			ContextMenuInfo menuInfo) {
+		if (v.getId() == android.R.id.list) {
+			AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
 
-	// @Override
-	// public boolean onContextItemSelected(MenuItem item) {
-	// AdapterView.AdapterContextMenuInfo info =
-	// (AdapterView.AdapterContextMenuInfo) item
-	// .getMenuInfo();
-	// Place place = (Place) getListAdapter().getItem(info.position);
-	// switch (item.getItemId()) {
-	// case R.id.open:
-	// onOpenClick(place);
-	// return true;
-	// case R.id.reality:
-	// onRealityClick(place);
-	// return true;
-	// case R.id.map:
-	// onMapClick(place);
-	// return true;
-	// case R.id.directions:
-	// onDirectionsClick(place);
-	// return true;
-	// default:
-	// return super.onContextItemSelected(item);
-	// }
-	// }
+			if (info.position == 1) {
+				menu.setHeaderTitle("Directions");
+				super.onCreateContextMenu(menu, v, menuInfo);
+				MenuInflater inflater = getMenuInflater();
+				inflater.inflate(R.menu.place_context_menu, menu);
+			}
+		}
+	}
+
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.reality:
+			onViewRealityClick(null);
+			return true;
+		case R.id.map:
+			onViewMapClick(null);
+			return true;
+		case R.id.directions:
+			onDirectionsClick(null);
+			return true;
+		default:
+			return super.onContextItemSelected(item);
+		}
+	}
 
 	/*
 	 * Dialog methods.

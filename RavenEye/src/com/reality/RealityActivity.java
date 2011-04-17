@@ -548,7 +548,7 @@ public class RealityActivity extends Activity implements LocationListener,
 		if (place != null) {
 			Intent intent = new Intent(this, PlaceActivity.class);
 			intent.putExtra(Place.class.toString(), place);
-			this.startActivity(intent);
+			startActivity(intent);
 		}
 	}
 
@@ -562,8 +562,11 @@ public class RealityActivity extends Activity implements LocationListener,
 		Runnable runnable = new Runnable() {
 
 			public void run() {
-				startActivity(new Intent(RealityActivity.this,
-						NavigationMapActivity.class));
+				Intent intent = new Intent(RealityActivity.this,
+						NavigationMapActivity.class);
+				intent.putExtra(Place.class.toString(), mSurface.getPlaces()
+						.toArray());
+				startActivity(intent);
 
 				dismissDialog(DIALOG_LOADING_MAPVIEW);
 			}
@@ -727,16 +730,6 @@ public class RealityActivity extends Activity implements LocationListener,
 						}
 					}
 				}
-
-				// if (places.length == 1) {
-				// place = (Place) places[0];
-				// float bearing = place.bearing;
-				// if (bearing >= 0) {
-				// Waypoint waypoint = new BearingWaypoint(bearing);
-				// waypoint.setPlace(place);
-				// new GenerateDirectionsTask().execute(waypoint);
-				// }
-				// }
 			}
 
 			return placeList;
@@ -757,8 +750,11 @@ public class RealityActivity extends Activity implements LocationListener,
 
 				if (type == TYPE_DIRECTIONS) {
 					// Download directions.
-					mSurface.setSelecetedPlace(0);
-					onNavigateToPlaceClick(null);
+					new DownloadDirectionsTask().execute(places.get(0));
+
+					if (mMenu != null) {
+						mMenu.getItem(0).setVisible(true);
+					}
 				}
 			}
 		}
@@ -796,7 +792,7 @@ public class RealityActivity extends Activity implements LocationListener,
 
 					return getDirections(aUrl);
 				} catch (Exception e) {
-					Log.e(TAG, e.toString());
+					Log.w(TAG, e.toString());
 
 					runOnUiThread(new Runnable() {
 						public void run() {
@@ -810,18 +806,20 @@ public class RealityActivity extends Activity implements LocationListener,
 		}
 
 		@SuppressWarnings("unchecked")
-		protected void onPostExecute(final List<Leg> waypoints) {
+		protected void onPostExecute(final List<Leg> legs) {
 			dismissDialog(DIALOG_DOWNLOADING_DIRECTIONS);
 
-			new GenerateDirectionsTask().execute(waypoints);
+			Log.d(TAG, "DIRECTIOSN: " + legs.size());
+
+			new GenerateDirectionsTask().execute(legs);
 		}
 
 	}
 
 	private class GenerateDirectionsTask extends
 			AsyncTask<List<Leg>, Void, DirectionManager> {
-		protected DirectionManager doInBackground(List<Leg>... placeWaypoint) {
-			List<Leg> waypoints = placeWaypoint[0];
+		protected DirectionManager doInBackground(List<Leg>... aLegs) {
+			List<Leg> legs = aLegs[0];
 
 			runOnUiThread(new Runnable() {
 				public void run() {
@@ -829,8 +827,8 @@ public class RealityActivity extends Activity implements LocationListener,
 				}
 			});
 
-			if (waypoints != null) {
-				return getDirections(waypoints);
+			if (legs != null) {
+				return getDirections(legs);
 			}
 
 			return null;
