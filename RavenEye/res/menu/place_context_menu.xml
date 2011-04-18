@@ -1,0 +1,11 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:title="Get Directions"
+        android:id="@+id/directions" />
+    <item
+        android:title="View Reality"
+        android:id="@+id/reality" />
+    <item
+        android:title="Show Map"
+        android:id="@+id/map" />
+</menu>

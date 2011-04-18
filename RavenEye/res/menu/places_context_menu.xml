@@ -4,12 +4,12 @@
         android:title="Open"
         android:id="@+id/open" />
     <item
-        android:title="View in reality mode"
+        android:title="View Reality"
         android:id="@+id/reality" />
     <item
-        android:title="View in map mode"
+        android:title="Show Map"
         android:id="@+id/map" />
     <item
-        android:title="Directions"
+        android:title="Get Directions"
         android:id="@+id/directions" />
 </menu>

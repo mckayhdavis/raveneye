@@ -46,12 +46,6 @@
         android:layout_margin="5dip"
         android:layout_gravity="top|right"
     ></TextView>
-    <TextView
-        android:id="@+id/status_output"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="left|bottom"
-    ></TextView>
     <ViewStub
         android:id="@+id/directions_status_stub"
         android:inflatedId="@+id/directions_status_view"

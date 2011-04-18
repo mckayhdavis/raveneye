@@ -8,8 +8,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
+        android:scaleType="center"
         android:padding="15dip"
-        android:src="@drawable/ic_popup_sync_1"
+        android:src="@drawable/ic_popup_sync"
         android:visibility="gone" />
     <TextView
         android:id="@+id/text"
@@ -17,7 +18,7 @@
         android:layout_height="wrap_content"
         android:layout_toRightOf="@+id/throbber"
         android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="Loading..."
+        android:text="Loading results"
         android:gravity="center_vertical"
         android:paddingTop="15dip"
         android:paddingRight="10dip"
