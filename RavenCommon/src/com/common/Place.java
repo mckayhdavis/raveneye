@@ -18,6 +18,7 @@ public class Place implements Comparable<Place>, Serializable {
 
 	public final int id;
 	public final String name;
+	public final String address;
 	public final Coordinate coordinate;
 
 	public float distance = -1;
@@ -27,11 +28,14 @@ public class Place implements Comparable<Place>, Serializable {
 
 	public transient float bearing = -1;
 	private transient Drawable mImageResource = null;
-	private transient int mImageResourceId = -1;
+	private String mRemoteImageFileName = null;
 
-	public Place(int id, String name, Coordinate coordinate) {
+	private int mReviewCount = 0;
+
+	public Place(int id, String name, String address, Coordinate coordinate) {
 		this.id = id;
 		this.name = name;
+		this.address = address;
 		this.coordinate = coordinate;
 	}
 
@@ -47,6 +51,18 @@ public class Place implements Comparable<Place>, Serializable {
 			mReviews = new ArrayList<Review>();
 		}
 		mReviews.add(review);
+	}
+	
+	public void setReviewCount(int reviews) {
+		mReviewCount = reviews;
+	}
+
+	public int getReviewCount() {
+		return mReviewCount;
+	}
+
+	public List<Review> getReviews() {
+		return mReviews;
 	}
 
 	/**
@@ -71,22 +87,20 @@ public class Place implements Comparable<Place>, Serializable {
 		return null;
 	}
 
-	public Place setImageResource(Drawable resource) {
+	public void setImageResource(Drawable resource) {
 		mImageResource = resource;
-		return this;
 	}
 
 	public Drawable getImageResource() {
 		return mImageResource;
 	}
 
-	public Place setImageResourceId(int resourceId) {
-		mImageResourceId = resourceId;
-		return this;
+	public void setRemoteImageFileName(String name) {
+		mRemoteImageFileName = name;
 	}
 
-	public int getImageResourceId() {
-		return mImageResourceId;
+	public String getRemoteImageFileName() {
+		return mRemoteImageFileName;
 	}
 
 	public static String getDistanceString(float distance) {

@@ -4,7 +4,9 @@ public class DirectionEvent {
 
 	public final int status;
 	public final int bearing;
-	public final int distance;
+	public final int legDistance;
+	public final int distanceRemaining;
+	public final int totalDuration;
 	public final int totalDistance;
 
 	public static final int STATUS_ARRIVED = 0;
@@ -13,11 +15,14 @@ public class DirectionEvent {
 
 	public static final int STATUS_INITIALIZING = -1;
 
-	public DirectionEvent(int status, int bearing, int distance, int totalDistance) {
+	public DirectionEvent(int status, int bearing, int legDistance,
+			int distanceRemaining, int totalDistance, int totalDuration) {
 		this.status = status;
 		this.bearing = bearing;
-		this.distance = distance;
+		this.legDistance = legDistance;
+		this.distanceRemaining = distanceRemaining;
 		this.totalDistance = totalDistance;
+		this.totalDuration = totalDuration;
 	}
 
 }

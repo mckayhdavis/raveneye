@@ -11,12 +11,17 @@ public class Directions<T extends Leg> {
 	 * last way-point.
 	 */
 	private final List<T> mWaypoints;
-	// private final Dictionary<T, T> mWaypoints = new Hashtable<T, T>();
+
+	private final int mTotalDistance;
+	private int mTotalDuration;
 
 	private volatile int mCurrentWaypointIndex;
 
-	public Directions(List<T> waypoints) {
+	public Directions(List<T> waypoints, int totalDistance, int totalDuration) {
 		mWaypoints = waypoints;
+
+		this.mTotalDistance = totalDistance;
+		this.mTotalDuration = totalDuration;
 	}
 
 	public List<T> getWaypoints() {
@@ -33,6 +38,14 @@ public class Directions<T extends Leg> {
 		}
 
 		return null;
+	}
+
+	public int getTotalDistance() {
+		return mTotalDistance;
+	}
+
+	public int getTotalDuration() {
+		return mTotalDuration;
 	}
 
 }

@@ -17,8 +17,14 @@ public class DirectionManager implements LocationListener {
 
 	protected volatile Directions<Leg> mDirections;
 
+	private int mDistanceRemaining;
+
 	public DirectionManager() {
 
+	}
+	
+	public Directions<Leg> getDirections() {
+		return mDirections;
 	}
 
 	/*
@@ -57,14 +63,19 @@ public class DirectionManager implements LocationListener {
 				if (mDirections.nextWaypoint() == null) {
 					// We are at the destination. Broadcast the event.
 					DirectionEvent event = new DirectionEvent(
-							DirectionEvent.STATUS_ARRIVED, bearing, distance, 0);
+							DirectionEvent.STATUS_ARRIVED, bearing, distance,
+							mDistanceRemaining, mDirections.getTotalDistance(),
+							mDirections.getTotalDuration());
 					notifyObservers(event);
+
 					return;
 				}
 			} else {
 				// Notify the observers.
 				DirectionEvent event = new DirectionEvent(
-						DirectionEvent.STATUS_ONCOURSE, bearing, distance, 0);
+						DirectionEvent.STATUS_ONCOURSE, bearing, distance,
+						mDistanceRemaining, mDirections.getTotalDistance(),
+						mDirections.getTotalDuration());
 				notifyObservers(event);
 
 				return;
@@ -89,6 +100,8 @@ public class DirectionManager implements LocationListener {
 
 	public void setDirections(Directions<Leg> directions) {
 		mDirections = directions;
+
+		mDistanceRemaining = directions.getTotalDistance();
 	}
 
 	public void registerObserver(DirectionObserver observer) {
