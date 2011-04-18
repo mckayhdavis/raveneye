@@ -141,7 +141,7 @@ public class NavigationMapActivity extends MapActivity {
 				Place place;
 
 				Drawable drawable = NavigationMapActivity.this.getResources()
-						.getDrawable(R.drawable.flag_green_icon);
+						.getDrawable(R.drawable.building_icon);
 				NavigationItemizedOverlay itemizedOverlay = new NavigationItemizedOverlay(
 						drawable);
 
@@ -450,9 +450,10 @@ public class NavigationMapActivity extends MapActivity {
 
 			});
 
-			title.setText(item.getTitle());
-			description.setText(item.getSnippet());
+			title.setVisibility(View.GONE);
+			description.setText(place.getDistanceString(place.distance));
 
+			dialog.setTitle(place.name);
 			dialog.show();
 
 			return true;

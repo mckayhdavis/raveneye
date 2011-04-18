@@ -52,7 +52,7 @@ import com.common.Coordinate;
 import com.common.HttpBuilder;
 import com.common.Place;
 
-public class PlaceActivity extends ListActivity {
+public class DirectionsOverviewActivity extends ListActivity {
 
 	public static final String TAG = "PlaceActivity";
 
@@ -78,8 +78,6 @@ public class PlaceActivity extends ListActivity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		// requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 
 		setContentView(R.layout.place_activity);
 
@@ -244,7 +242,7 @@ public class PlaceActivity extends ListActivity {
 	private class DownloadImageTask extends AsyncTask<Place, Void, Void> {
 
 		protected Void doInBackground(Place... p) {
-			ListView listview = PlaceActivity.this.getListView();
+			ListView listview = DirectionsOverviewActivity.this.getListView();
 
 			Place place = p[0];
 			if (place != null) {
@@ -297,7 +295,7 @@ public class PlaceActivity extends ListActivity {
 		private ImageLoader mImageLoader;
 
 		public PlaceAdapter(ArrayList<Data> places) {
-			super(new ArrayAdapter<Data>(PlaceActivity.this,
+			super(new ArrayAdapter<Data>(DirectionsOverviewActivity.this,
 					R.layout.place_list_item, places));
 
 			mDefaultDrawable = getResources().getDrawable(
@@ -573,7 +571,7 @@ public class PlaceActivity extends ListActivity {
 
 	public void onDirectionsClick(View v) {
 		Intent intent = new Intent(getApplicationContext(),
-				DirectionsOverviewActivity.class);
+				RealityActivity.class);
 
 		intent.putExtra("type", RealityActivity.TYPE_DIRECTIONS);
 		intent.putExtra(Place.class.toString(), new Object[] { mPlace });

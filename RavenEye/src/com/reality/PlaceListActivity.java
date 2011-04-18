@@ -25,8 +25,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
@@ -47,6 +45,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.RatingBar;
 import android.widget.TextView;
 
 import com.common.Coordinate;
@@ -58,6 +57,8 @@ public class PlaceListActivity extends ListActivity {
 	public static final String TAG = "RealityActivity";
 
 	public static final int DIALOG_LOADING = 0;
+
+	public static final String REMOTE_PLACE_IMAGE_DIR = "http://tailoredpages.com/raven/images/";
 
 	private static final String NULL_STRING = "null";
 	private static final String EMPTY_STRING = "";
@@ -125,7 +126,14 @@ public class PlaceListActivity extends ListActivity {
 
 					String id = obj.getString("ID");
 					String name = obj.getString("Name");
-					String code = obj.getString("Code");
+					String address = obj.getString("Street") + "\n"
+							+ obj.getString("City") + ", "
+							+ obj.getString("PCode") + " "
+							+ obj.getString("PostalCode") + "\n"
+							+ obj.getString("Country");
+					String code = obj.getString("BCode");
+					String remoteImage = obj.getString("FileName");
+					String reviewCount = obj.getString("ReviewCount");
 
 					Coordinate coord;
 					try {
@@ -136,16 +144,18 @@ public class PlaceListActivity extends ListActivity {
 						coord = null;
 					}
 
-					place = new Place(Integer.parseInt(id), name, coord);
+					place = new Place(Integer.parseInt(id), name, address,
+							coord);
 					place.buildingCode = !code.equals(NULL_STRING) ? code
 							: null;
+					place.setRemoteImageFileName(!remoteImage
+							.equals(NULL_STRING) ? remoteImage : null);
+					if (!reviewCount.equals(NULL_STRING)) {
+						place.setReviewCount(Integer.parseInt(reviewCount));
+					}
+
 					places.add(place);
 				}
-
-				// A Simple JSONObject Value Pushing
-				json.put("sample key", "sample value");
-				Log.i(TAG, "<jsonobject>\n" + json.toString()
-						+ "\n</jsonobject>");
 
 				// Closing the input stream will trigger connection release
 				instream.close();
@@ -228,9 +238,11 @@ public class PlaceListActivity extends ListActivity {
 
 	private static class ViewHolder {
 		ImageView icon;
-		TextView top;
-		TextView bottom;
-		TextView bottomRight;
+		TextView title;
+		TextView address;
+		RatingBar rating;
+		TextView reviews;
+		TextView distance;
 	}
 
 	private class PlaceAdapter extends EndlessAdapter<Place> {
@@ -239,26 +251,27 @@ public class PlaceListActivity extends ListActivity {
 
 		private LayoutInflater mInflater;
 
-		private final Bitmap mDefaultBitmap;
+		private final Drawable mDefaultDrawable;
+
+		private ImageLoader mImageLoader;
 
 		public PlaceAdapter(ArrayList<Place> places) {
 			super(new ArrayAdapter<Place>(PlaceListActivity.this,
 					R.layout.places_list_item, places));
 
-			mDefaultBitmap = BitmapFactory.decodeResource(getResources(),
-					R.drawable.ic_menu_gallery);
-
-			// Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(),
-			// R.drawable.ic_menu_gallery), 50,
-			// 50, true);
+			mDefaultDrawable = getResources().getDrawable(
+					R.drawable.ic_popup_sync);
 
 			mInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-			rotate = new RotateAnimation(0f, 360f, Animation.RELATIVE_TO_SELF,
+			rotate = new RotateAnimation(0f, 3600f, Animation.RELATIVE_TO_SELF,
 					0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-			rotate.setDuration(2000);
+			rotate.setDuration(10000);
 			rotate.setRepeatMode(Animation.RESTART);
 			rotate.setRepeatCount(Animation.INFINITE);
+
+			mImageLoader = new ImageLoader(getApplicationContext(),
+					REMOTE_PLACE_IMAGE_DIR, mDefaultDrawable);
 		}
 
 		@Override
@@ -271,11 +284,15 @@ public class PlaceListActivity extends ListActivity {
 
 				holder = new ViewHolder();
 				holder.icon = (ImageView) convertView.findViewById(R.id.icon);
-				holder.top = (TextView) convertView.findViewById(R.id.title);
-				holder.bottom = (TextView) convertView
-						.findViewById(R.id.description);
-				holder.bottomRight = (TextView) convertView
-						.findViewById(R.id.caption);
+				holder.title = (TextView) convertView.findViewById(R.id.title);
+				holder.address = (TextView) convertView
+						.findViewById(R.id.address);
+				holder.rating = (RatingBar) convertView
+						.findViewById(R.id.rating);
+				holder.reviews = (TextView) convertView
+						.findViewById(R.id.reviews);
+				holder.distance = (TextView) convertView
+						.findViewById(R.id.distance);
 
 				convertView.setTag(holder);
 			} else {
@@ -291,33 +308,25 @@ public class PlaceListActivity extends ListActivity {
 			}
 
 			if (place != null) {
-				Bitmap bitmap;
-				int resId = place.getImageResourceId();
-				if (resId >= 0) {
-					bitmap = BitmapFactory
-							.decodeResource(getResources(), resId);
-				} else {
-					bitmap = mDefaultBitmap;
-				}
+				String imageFileName = place.getRemoteImageFileName();
+				mImageLoader.DisplayImage(imageFileName, holder.icon);
 
-				holder.icon.setImageBitmap(bitmap);
-				holder.top.setText(place.name);
+				holder.title.setText(place.name);
 				float distance = place.distance;
 				if (distance >= 0) {
-					holder.bottom.setText("Distance: "
-							+ Place.getDistanceString(distance));
-					holder.bottom.setVisibility(View.VISIBLE);
+					holder.distance.setText(Place.getDistanceString(distance));
+					holder.distance.setVisibility(View.VISIBLE);
 				} else {
-					holder.bottom.setVisibility(View.GONE);
+					holder.distance.setVisibility(View.GONE);
 				}
-				String buildingCode = place.buildingCode;
-				if (buildingCode != null) {
-					holder.bottomRight.setText(buildingCode);
-				} else {
-					holder.bottomRight.setText(EMPTY_STRING);
-				}
-			}
 
+				holder.address.setText(place.address);
+
+				holder.rating.setRating(0f);
+				int reviewCount = place.getReviewCount();
+				holder.reviews.setText(reviewCount
+						+ ((reviewCount == 1) ? " review" : " reviews"));
+			}
 			return super.getView(position, convertView, parent);
 		}
 
@@ -501,7 +510,7 @@ public class PlaceListActivity extends ListActivity {
 
 	public void onDirectionsClick(Place place) {
 		Intent intent = new Intent(getApplicationContext(),
-				RealityActivity.class);
+				DirectionsOverviewActivity.class);
 
 		intent.putExtra("type", RealityActivity.TYPE_DIRECTIONS);
 		intent.putExtra(Place.class.toString(), new Object[] { place });

@@ -37,10 +37,10 @@ public class PictureFrameActivity extends Activity {
 			}
 
 			if (place != null) {
-				int picture = place.getImageResourceId();
-				
-				Gallery g = (Gallery) findViewById(R.id.gallery);
-			    g.setAdapter(new ImageAdapter(this, picture));
+//				int picture = place.getImageResourceId();
+//				
+//				Gallery g = (Gallery) findViewById(R.id.gallery);
+//			    g.setAdapter(new ImageAdapter(this, picture));
 
 //			    g.setOnItemClickListener(new OnItemClickListener() {
 //			        public void onItemClick(AdapterView parent, View v, int position, long id) {

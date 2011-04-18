@@ -103,7 +103,6 @@ public class RealityActivity extends Activity implements LocationListener,
 	private TextView mLegDistanceRemainingView = null;
 
 	private TextView mRealityStatusLabel;
-	private TextView mStatusLabel;
 
 	private View mPlaceDescriptionView;
 	private TextView mTitleView;
@@ -141,7 +140,6 @@ public class RealityActivity extends Activity implements LocationListener,
 		mSurface = (RealityOverlayView) findViewById(R.id.surface);
 		mCompassView = (RealitySmallCompassView) findViewById(R.id.compass);
 		mRealityStatusLabel = (TextView) findViewById(R.id.reality_status_output);
-		mStatusLabel = (TextView) findViewById(R.id.status_output);
 
 		mSurface.registerForUpdates(mCompassView);
 
@@ -629,14 +627,14 @@ public class RealityActivity extends Activity implements LocationListener,
 			// dismissDirectionOverlay();
 
 			Log.d(TAG, "Arrived at destination");
-			// mTotalDistanceRemainingView.setText("Arrived!");
+			mTotalDistanceRemainingView.setText(event.distanceRemaining);
 			mLegDistanceRemainingView.setBackgroundColor(Color.GREEN);
 			mLegDistanceRemainingView.setText("Arrived!");
 		} else {
 			// mTotalDistanceRemainingView.setText(Place
 			// .getDistanceString(event.distance));
 			mLegDistanceRemainingView.setText(Place
-					.getDistanceString(event.distance));
+					.getDistanceString(event.legDistance));
 		}
 	}
 
@@ -654,17 +652,14 @@ public class RealityActivity extends Activity implements LocationListener,
 				showStatusLabel(DIALOG_DEFAULT_STATUS);
 			}
 		}
-
-		mStatusLabel.setText("Speed: (" + ++mLocationCount + ") "
-				+ location.getSpeed());
 	}
 
-	private int mLocationCount = 0;
-
 	public void onProviderDisabled(String provider) {
+
 	}
 
 	public void onProviderEnabled(String provider) {
+
 	}
 
 	public void onStatusChanged(String provider, int status, Bundle extras) {
@@ -766,8 +761,8 @@ public class RealityActivity extends Activity implements LocationListener,
 	 * location.
 	 */
 	private class DownloadDirectionsTask extends
-			AsyncTask<Place, Void, List<Leg>> {
-		protected List<Leg> doInBackground(Place... place) {
+			AsyncTask<Place, Void, Directions<Leg>> {
+		protected Directions<Leg> doInBackground(Place... place) {
 			runOnUiThread(new Runnable() {
 				public void run() {
 					showDialog(DIALOG_DOWNLOADING_DIRECTIONS);
@@ -788,7 +783,7 @@ public class RealityActivity extends Activity implements LocationListener,
 					URL aUrl = new URL(
 							"http://maps.googleapis.com/maps/api/directions/json?origin="
 									+ origin + "&destination=" + destination
-									+ "&sensor=true");
+									+ "&mode=walking&sensor=true");
 
 					return getDirections(aUrl);
 				} catch (Exception e) {
@@ -805,21 +800,22 @@ public class RealityActivity extends Activity implements LocationListener,
 			return null;
 		}
 
-		@SuppressWarnings("unchecked")
-		protected void onPostExecute(final List<Leg> legs) {
-			dismissDialog(DIALOG_DOWNLOADING_DIRECTIONS);
+		protected void onPostExecute(final Directions<Leg> directions) {
+			try {
+				dismissDialog(DIALOG_DOWNLOADING_DIRECTIONS);
+			} catch (IllegalArgumentException e) {
 
-			Log.d(TAG, "DIRECTIOSN: " + legs.size());
+			}
 
-			new GenerateDirectionsTask().execute(legs);
+			new GenerateDirectionsTask().execute(directions);
 		}
 
 	}
 
 	private class GenerateDirectionsTask extends
-			AsyncTask<List<Leg>, Void, DirectionManager> {
-		protected DirectionManager doInBackground(List<Leg>... aLegs) {
-			List<Leg> legs = aLegs[0];
+			AsyncTask<Directions<Leg>, Void, DirectionManager> {
+		protected DirectionManager doInBackground(Directions<Leg>... dirs) {
+			Directions<Leg> directions = dirs[0];
 
 			runOnUiThread(new Runnable() {
 				public void run() {
@@ -827,16 +823,14 @@ public class RealityActivity extends Activity implements LocationListener,
 				}
 			});
 
-			if (legs != null) {
-				return getDirections(legs);
+			if (directions != null) {
+				return getDirections(directions);
 			}
 
 			return null;
 		}
 
-		private DirectionManager getDirections(List<Leg> waypoints) {
-			Directions<Leg> directions = new Directions<Leg>(waypoints);
-
+		private DirectionManager getDirections(Directions<Leg> directions) {
 			DirectionManager manager = new DirectionManager();
 			manager.setDirections(directions);
 
@@ -867,6 +861,10 @@ public class RealityActivity extends Activity implements LocationListener,
 
 				mOrientationListener.registerForUpdates(mDirectionView);
 
+				Directions<Leg> directions = directionManager.getDirections();
+				mTotalDistanceRemainingView.setText(Place
+						.getDistanceString(directions.getTotalDistance()));
+
 				registerDirectionManager(directionManager);
 			} else {
 				showToast(TOAST_DOWNLOADING_DIRECTIONS_FAILED);
@@ -874,8 +872,8 @@ public class RealityActivity extends Activity implements LocationListener,
 		}
 	}
 
-	private List<Leg> getDirections(URL url) throws IllegalStateException,
-			IOException, JSONException {
+	private Directions<Leg> getDirections(URL url)
+			throws IllegalStateException, IOException, JSONException {
 		final HttpClient httpclient = new DefaultHttpClient();
 		final HttpGet httpget = new HttpGet(url.toString());
 		HttpResponse response;
@@ -904,13 +902,15 @@ public class RealityActivity extends Activity implements LocationListener,
 			JSONArray legs, steps;
 			JSONObject startLocation, endLocation;
 
-			int len = routes.length();
-			for (int i = 0; i < len; i++) {
-				legs = routes.getJSONObject(i).getJSONArray("legs");
+			Directions<Leg> directions;
 
-				int len2 = legs.length();
-				for (int j = 0; j < len2; j++) {
-					steps = legs.getJSONObject(j).getJSONArray("steps");
+			int len = routes.length();
+			if (len > 0) {
+				legs = routes.getJSONObject(0).getJSONArray("legs");
+
+				len = legs.length();
+				if (len > 0) {
+					steps = legs.getJSONObject(0).getJSONArray("steps");
 
 					int len3 = steps.length();
 					for (int k = 0; k < len3; k++) {
@@ -933,11 +933,23 @@ public class RealityActivity extends Activity implements LocationListener,
 						waypoints.add(waypoint);
 					}
 				}
+
+				JSONObject distanceObj = legs.getJSONObject(0).getJSONObject(
+						"distance");
+				JSONObject durationObj = legs.getJSONObject(0).getJSONObject(
+						"distance");
+				int distance = Integer.parseInt(distanceObj.getString("value"));
+				int duration = Integer.parseInt(durationObj.getString("value"));
+
+				directions = new Directions<Leg>(waypoints, distance, duration);
+			} else {
+				directions = null;
 			}
+
 			// Closing the input stream will trigger connection release
 			instream.close();
 
-			return waypoints;
+			return directions;
 		}
 
 		return null;
