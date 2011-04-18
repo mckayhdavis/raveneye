@@ -20,6 +20,7 @@ import org.json.JSONObject;
 import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -28,6 +29,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -70,6 +72,7 @@ public class PlaceActivity extends ListActivity {
 	private static final int TYPE_BCODE = 4;
 	private static final int TYPE_COORDINATES = 5;
 	private static final int TYPE_ADDRESS = 6;
+	private static final int TYPE_REVIEWS = 7;
 
 	private Place mPlace = null;
 
@@ -156,6 +159,7 @@ public class PlaceActivity extends ListActivity {
 					String description = obj.getString("Description");
 					String code = obj.getString("BCode");
 					String fileName = obj.getString("FileName");
+					String reviewCount = obj.getString("ReviewCount");
 
 					Coordinate coord;
 					try {
@@ -173,6 +177,9 @@ public class PlaceActivity extends ListActivity {
 					place.description = description;
 					code = !code.equals(NULL_STRING) ? code : null;
 					place.buildingCode = code;
+					if (!reviewCount.equals(NULL_STRING)) {
+						place.setReviewCount(Integer.parseInt(reviewCount));
+					}
 
 					/*
 					 * Add to data.
@@ -197,14 +204,11 @@ public class PlaceActivity extends ListActivity {
 						data.add(new Data("Coordinates", coord.toString(),
 								R.drawable.ic_menu_compass, TYPE_COORDINATES));
 					}
-
-					break;
+					int reviews = place.getReviewCount();
+					data.add(new Data("Reviews", reviews
+							+ ((reviews == 1) ? " review" : " reviews"),
+							R.drawable.ic_menu_edit, TYPE_REVIEWS));
 				}
-
-				// A Simple JSONObject Value Pushing
-				json.put("sample key", "sample value");
-				Log.i(TAG, "<jsonobject>\n" + json.toString()
-						+ "\n</jsonobject>");
 
 				// Closing the input stream will trigger connection release
 				instream.close();
@@ -465,6 +469,9 @@ public class PlaceActivity extends ListActivity {
 			case TYPE_COORDINATES:
 				onViewMapClick(null);
 				break;
+			case TYPE_REVIEWS:
+				onWriteReviewClick(null);
+				break;
 			default:
 			}
 		}
@@ -497,8 +504,11 @@ public class PlaceActivity extends ListActivity {
 		case R.id.map:
 			onViewMapClick(null);
 			return true;
-		case R.id.directions:
+		case R.id.r_directions:
 			onDirectionsClick(null);
+			return true;
+		case R.id.t_directions:
+			onTraditionalDirectionsClick(null);
 			return true;
 		default:
 			return super.onContextItemSelected(item);
@@ -573,12 +583,53 @@ public class PlaceActivity extends ListActivity {
 
 	public void onDirectionsClick(View v) {
 		Intent intent = new Intent(getApplicationContext(),
-				DirectionsOverviewActivity.class);
+				RealityActivity.class);
 
 		intent.putExtra("type", RealityActivity.TYPE_DIRECTIONS);
 		intent.putExtra(Place.class.toString(), new Object[] { mPlace });
 
 		this.startActivity(intent);
+	}
+
+	public void onTraditionalDirectionsClick(View v) {
+		LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+		List<String> providers = lm.getProviders(true);
+		Location location = null;
+
+		for (int i = providers.size() - 1; i >= 0; i--) {
+			location = lm.getLastKnownLocation(providers.get(i));
+			if (location != null) {
+				break;
+			}
+		}
+
+		if (location != null) {
+			StringBuilder url = new StringBuilder();
+			url.append("http://maps.google.com/maps?f=d&hl=en");
+			url.append("&daddr=");
+			url.append(Double.toString(mPlace.coordinate.latitude));
+			url.append(",");
+			url.append(Double.toString(mPlace.coordinate.longitude));
+			url.append("&dirflg=d&nav=1");
+			url.append("&mode=walking");
+			Intent intent = new Intent(Intent.ACTION_VIEW);
+			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			intent.setData(Uri.parse(url.toString()));
+			intent.addFlags(0x10800000);
+			intent.setClassName("com.google.android.apps.m4ps",
+					"com.google.android.maps.driveabout.app.NavigationActivity");
+			try {
+				startActivity(intent);
+			} catch (ActivityNotFoundException e) {
+				intent.setClassName("com.google.android.apps.maps",
+						"com.google.android.maps.driveabout.app.NavigationActivity");
+				try {
+					startActivity(intent);
+				} catch (ActivityNotFoundException e2) {
+
+				}
+			}
+		}
 	}
 
 	public void onAddToFavouritesClick(View v) {

@@ -510,7 +510,7 @@ public class PlaceListActivity extends ListActivity {
 
 	public void onDirectionsClick(Place place) {
 		Intent intent = new Intent(getApplicationContext(),
-				DirectionsOverviewActivity.class);
+				RealityActivity.class);
 
 		intent.putExtra("type", RealityActivity.TYPE_DIRECTIONS);
 		intent.putExtra(Place.class.toString(), new Object[] { place });
