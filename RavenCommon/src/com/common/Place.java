@@ -24,7 +24,7 @@ public class Place implements Comparable<Place>, Serializable {
 	public float distance = -1;
 	public String description = null;
 	public String buildingCode = null;
-	private ArrayList<Review> mReviews = null;
+	private List<Review> mReviews = null;
 
 	public transient float bearing = -1;
 	private transient Drawable mImageResource = null;
@@ -52,7 +52,7 @@ public class Place implements Comparable<Place>, Serializable {
 		}
 		mReviews.add(review);
 	}
-	
+
 	public void setReviewCount(int reviews) {
 		mReviewCount = reviews;
 	}
