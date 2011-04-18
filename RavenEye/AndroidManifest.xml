@@ -25,7 +25,7 @@
             android:name="com.reality.PlaceListActivity"
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/places_list_activity"
-            android:theme="@style/Theme.RavenEye">
+            android:theme="@style/Theme.RavenEyeNoTitle">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -35,7 +35,7 @@
             android:name="com.reality.PlaceActivity"
             android:configChanges="orientation|keyboardHidden"
             android:label="@string/places_activity"
-            android:theme="@android:style/Theme.NoTitleBar">
+            android:theme="@style/Theme.RavenEyeNoTitle">
         </activity>
         <activity
             android:name="com.reality.PictureFrameActivity"
