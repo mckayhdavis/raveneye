@@ -1,7 +1,10 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:title="Get Directions"
-        android:id="@+id/directions" />
+        android:title="Get Reality Directions"
+        android:id="@+id/r_directions" />
+    <item
+        android:title="Get Traditional Directions"
+        android:id="@+id/t_directions" />
     <item
         android:title="View Reality"
         android:id="@+id/reality" />

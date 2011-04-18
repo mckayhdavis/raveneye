@@ -11,32 +11,35 @@
         android:id="@+id/title"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_toRightOf="@+id/icon"
-        android:padding="1dip"
-        android:text="Top"
         android:textStyle="bold"
-        android:textColor="#ffffffff"
         android:textSize="16sp" />
     <TextView
         android:id="@+id/content"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_toRightOf="@+id/icon"
         android:layout_below="@+id/title"
-        android:layout_alignWithParentIfMissing="true"
-        android:padding="1dip"
-        android:text="Bottom"
-        android:textSize="16sp" />
+        android:paddingTop="1dip"
+        android:paddingBottom="1dip"
+        android:textSize="15sp" />
+    <RatingBar
+        android:id="@+id/rating"
+        style="?android:attr/ratingBarStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/content"
+        android:layout_gravity="center_vertical"
+        android:layout_alignParentBottom="true"
+        android:numStars="5" />
     <TextView
         android:id="@+id/date"
-        android:layout_width="fill_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toRightOf="@+id/icon"
         android:layout_below="@+id/content"
-        android:layout_alignWithParentIfMissing="true"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
         android:gravity="right"
-        android:padding="1dip"
+        android:paddingRight="3dip"
         android:text="Bottom"
-        android:textColor="#CCCCCC"
-        android:textSize="14sp" />
+        android:textStyle="italic"
+        android:textSize="13sp" />
 </RelativeLayout>
