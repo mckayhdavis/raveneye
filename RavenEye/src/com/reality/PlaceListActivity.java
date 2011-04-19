@@ -134,6 +134,7 @@ public class PlaceListActivity extends ListActivity {
 					String code = obj.getString("BCode");
 					String remoteImage = obj.getString("FileName");
 					String reviewCount = obj.getString("ReviewCount");
+					String rating = obj.getString("Rating");
 
 					Coordinate coord;
 					try {
@@ -153,6 +154,7 @@ public class PlaceListActivity extends ListActivity {
 					if (!reviewCount.equals(NULL_STRING)) {
 						place.setReviewCount(Integer.parseInt(reviewCount));
 					}
+					place.setRating(Float.parseFloat(rating));
 
 					places.add(place);
 				}
@@ -321,8 +323,7 @@ public class PlaceListActivity extends ListActivity {
 				}
 
 				holder.address.setText(place.address);
-
-				holder.rating.setRating(0f);
+				holder.rating.setRating(place.getRating());
 				int reviewCount = place.getReviewCount();
 				holder.reviews.setText(reviewCount
 						+ ((reviewCount == 1) ? " review" : " reviews"));
@@ -497,6 +498,8 @@ public class PlaceListActivity extends ListActivity {
 		Intent intent = new Intent(this, RealityActivity.class);
 		if (place != null) {
 			intent.putExtra(Place.class.toString(), new Object[] { place });
+		} else {
+			intent.putExtra(Place.class.toString(), mPlaces.toArray());
 		}
 		this.startActivity(intent);
 	}

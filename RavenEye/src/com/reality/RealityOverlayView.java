@@ -447,6 +447,8 @@ public class RealityOverlayView extends LayoutSensorView {
 				} else {
 					mPlacePositions.put(placeWrapper, new TouchPoint(x, y));
 				}
+				
+				int textY = (int) (y + 20 + (10 * factor));
 
 				// TODO: The text is cutoff at North if the actual shape is not
 				// crossing North. (long place names are therefore cut off at
@@ -465,10 +467,10 @@ public class RealityOverlayView extends LayoutSensorView {
 					canvas.drawCircle(mCanvasWidth + x, y, halfWidth, paint);
 
 					canvas.drawText(place.name, x, y, textPaint);
-					canvas.drawText(distanceString, x, y + 20, textPaint);
+					canvas.drawText(distanceString, x, textY, textPaint);
 
 					canvas.drawText(place.name, mCanvasWidth + x, y, textPaint);
-					canvas.drawText(distanceString, mCanvasWidth + x, y + 20,
+					canvas.drawText(distanceString, mCanvasWidth + x, textY,
 							textPaint);
 				} else if (right > mCanvasWidth) {
 					// Draw on the right side of the canvas with some overlap
@@ -482,10 +484,10 @@ public class RealityOverlayView extends LayoutSensorView {
 					canvas.drawCircle(x - mCanvasWidth, y, halfWidth, paint);
 
 					canvas.drawText(place.name, x, y, textPaint);
-					canvas.drawText(distanceString, x, y + 20, textPaint);
+					canvas.drawText(distanceString, x, textY, textPaint);
 
 					canvas.drawText(place.name, x - mCanvasWidth, y, textPaint);
-					canvas.drawText(distanceString, x - mCanvasWidth, y + 20,
+					canvas.drawText(distanceString, x - mCanvasWidth, textY,
 							textPaint);
 				} else {
 					// Draw the canvas normally.
@@ -493,7 +495,7 @@ public class RealityOverlayView extends LayoutSensorView {
 					canvas.drawCircle(x, y, halfWidth, paint);
 
 					canvas.drawText(place.name, x, y, textPaint);
-					canvas.drawText(distanceString, x, y + 20, textPaint);
+					canvas.drawText(distanceString, x, textY, textPaint);
 				}
 			}
 

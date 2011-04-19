@@ -24,7 +24,6 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.hardware.Camera;
@@ -96,7 +95,7 @@ public class RealityActivity extends Activity implements LocationListener,
 	public static final int MIN_DISTANCE_BETWEEN_LOCATION_UPDATES = 1;
 
 	private RealityOverlayView mSurface;
-	private RealitySmallCompassView mCompassView;
+	private RealityCompassView mCompassView;
 	private RealityDirectionView mDirectionView = null;
 	private View mDistanceStatusView = null;
 	private TextView mTotalDistanceRemainingView = null;
@@ -114,12 +113,6 @@ public class RealityActivity extends Activity implements LocationListener,
 	private Menu mMenu;
 
 	private Timer mGpsTimer;
-
-	protected static final String PROXIMITY_ALERT = new String(
-			"android.intent.action.PROXIMITY_ALERT");
-	protected final IntentFilter proximitylocationIntentFilter = new IntentFilter(
-			PROXIMITY_ALERT);
-	protected final Intent proximitylocationIntent = new Intent(PROXIMITY_ALERT);
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -627,7 +620,8 @@ public class RealityActivity extends Activity implements LocationListener,
 			// dismissDirectionOverlay();
 
 			Log.d(TAG, "Arrived at destination");
-			mTotalDistanceRemainingView.setText(event.distanceRemaining);
+			mTotalDistanceRemainingView.setText(Place
+					.getDistanceString(event.distanceRemaining));
 			mLegDistanceRemainingView.setBackgroundColor(Color.GREEN);
 			mLegDistanceRemainingView.setText("Arrived!");
 		} else {
@@ -800,6 +794,7 @@ public class RealityActivity extends Activity implements LocationListener,
 			return null;
 		}
 
+		@SuppressWarnings("unchecked")
 		protected void onPostExecute(final Directions<Leg> directions) {
 			try {
 				dismissDialog(DIALOG_DOWNLOADING_DIRECTIONS);

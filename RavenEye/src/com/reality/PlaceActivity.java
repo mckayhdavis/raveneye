@@ -47,6 +47,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -73,6 +74,7 @@ public class PlaceActivity extends ListActivity {
 	private static final int TYPE_COORDINATES = 5;
 	private static final int TYPE_ADDRESS = 6;
 	private static final int TYPE_REVIEWS = 7;
+	private static final int TYPE_RATING = 8;
 
 	private Place mPlace = null;
 
@@ -160,6 +162,7 @@ public class PlaceActivity extends ListActivity {
 					String code = obj.getString("BCode");
 					String fileName = obj.getString("FileName");
 					String reviewCount = obj.getString("ReviewCount");
+					String rating = obj.getString("Rating");
 
 					Coordinate coord;
 					try {
@@ -180,6 +183,7 @@ public class PlaceActivity extends ListActivity {
 					if (!reviewCount.equals(NULL_STRING)) {
 						place.setReviewCount(Integer.parseInt(reviewCount));
 					}
+					place.setRating(Float.parseFloat(rating));
 
 					/*
 					 * Add to data.
@@ -193,6 +197,7 @@ public class PlaceActivity extends ListActivity {
 					data.add(new Data("Distance", Place
 							.getDistanceString(place.distance),
 							R.drawable.ic_menu_directions, TYPE_DISTANCE));
+					data.add(new Data("Rating", null, TYPE_RATING));
 					data.add(new Data("Description", description,
 							TYPE_DESCRIPTION));
 					data.add(new Data("Address", address,
@@ -290,6 +295,13 @@ public class PlaceActivity extends ListActivity {
 		ImageView icon;
 	}
 
+	private static class RatingViewHolder {
+		ImageView icon;
+		TextView title;
+		RatingBar rating;
+		TextView bottom;
+	}
+
 	private class PlaceAdapter extends EndlessAdapter<Data> {
 
 		private RotateAnimation rotate = null;
@@ -305,7 +317,7 @@ public class PlaceActivity extends ListActivity {
 					R.layout.place_list_item, places));
 
 			mDefaultDrawable = getResources().getDrawable(
-					R.drawable.ic_menu_gallery);
+					R.drawable.ic_popup_sync);
 
 			mInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
@@ -323,68 +335,94 @@ public class PlaceActivity extends ListActivity {
 
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
-			if (position == 0) {
-				IconViewHolder holder;
-				if (convertView == null
-						|| !(convertView.getTag() instanceof IconViewHolder)) {
-					holder = new IconViewHolder();
+			Data data = null;
 
-					convertView = mInflater.inflate(R.layout.icon_list_item,
-							null);
-
-					holder.icon = (ImageView) convertView
-							.findViewById(R.id.icon);
-
-					convertView.setTag(holder);
-				} else {
-					holder = (IconViewHolder) convertView.getTag();
+			synchronized (this) {
+				if (position < getItemCount()) {
+					data = (Data) getItem(position);
 				}
+			}
 
-				mImageLoader.DisplayImage(mPlace.getRemoteImageFileName(),
-						holder.icon);
-			} else {
-				Data data = null;
+			if (data != null) {
+				switch (data.type) {
+				case TYPE_ICON:
+					IconViewHolder iconHolder;
+					if (convertView == null
+							|| !(convertView.getTag() instanceof IconViewHolder)) {
+						iconHolder = new IconViewHolder();
 
-				synchronized (this) {
-					if (position < this.getItemCount()) {
-						data = (Data) this.getItem(position);
+						convertView = mInflater.inflate(
+								R.layout.icon_list_item, null);
+
+						iconHolder.icon = (ImageView) convertView
+								.findViewById(R.id.icon);
+
+						convertView.setTag(iconHolder);
+					} else {
+						iconHolder = (IconViewHolder) convertView.getTag();
 					}
+
+					mImageLoader.DisplayImage(mPlace.getRemoteImageFileName(),
+							iconHolder.icon);
+					break;
+				case TYPE_RATING:
+					RatingViewHolder ratingHolder;
+					if (convertView == null
+							|| !(convertView.getTag() instanceof RatingViewHolder)) {
+						ratingHolder = new RatingViewHolder();
+
+						convertView = mInflater.inflate(
+								R.layout.rating_list_item, null);
+
+						ratingHolder.title = (TextView) convertView
+								.findViewById(R.id.title);
+						ratingHolder.rating = (RatingBar) convertView
+								.findViewById(R.id.rating);
+
+						convertView.setTag(ratingHolder);
+					} else {
+						ratingHolder = (RatingViewHolder) convertView.getTag();
+					}
+
+					ratingHolder.title.setText(data.title);
+					ratingHolder.rating.setRating(mPlace.getRating());
+					break;
+				default:
+					TextViewHolder textHolder;
+					if (convertView == null
+							|| !(convertView.getTag() instanceof TextViewHolder)) {
+						textHolder = new TextViewHolder();
+
+						convertView = mInflater.inflate(
+								R.layout.place_list_item, null);
+
+						textHolder.icon = (ImageView) convertView
+								.findViewById(R.id.icon);
+						textHolder.title = (TextView) convertView
+								.findViewById(R.id.title);
+						textHolder.content = (TextView) convertView
+								.findViewById(R.id.content);
+						textHolder.bottom = (TextView) convertView
+								.findViewById(R.id.bottom);
+
+						convertView.setTag(textHolder);
+					} else {
+						textHolder = (TextViewHolder) convertView.getTag();
+					}
+
+					// Set the holder values.
+					int visibility;
+					if (data.drawable == 0) {
+						visibility = View.GONE;
+					} else {
+						visibility = View.VISIBLE;
+
+						textHolder.icon.setBackgroundResource(data.drawable);
+					}
+					textHolder.icon.setVisibility(visibility);
+					textHolder.title.setText(data.title);
+					textHolder.content.setText(data.content);
 				}
-
-				TextViewHolder holder;
-				if (convertView == null
-						|| !(convertView.getTag() instanceof TextViewHolder)) {
-					holder = new TextViewHolder();
-
-					convertView = mInflater.inflate(R.layout.place_list_item,
-							null);
-
-					holder.icon = (ImageView) convertView
-							.findViewById(R.id.icon);
-					holder.title = (TextView) convertView
-							.findViewById(R.id.title);
-					holder.content = (TextView) convertView
-							.findViewById(R.id.content);
-					holder.bottom = (TextView) convertView
-							.findViewById(R.id.bottom);
-
-					convertView.setTag(holder);
-				} else {
-					holder = (TextViewHolder) convertView.getTag();
-				}
-
-				// Set the holder values.
-				int visibility;
-				if (data.drawable == 0) {
-					visibility = View.GONE;
-				} else {
-					visibility = View.VISIBLE;
-
-					holder.icon.setBackgroundResource(data.drawable);
-				}
-				holder.icon.setVisibility(visibility);
-				holder.title.setText(data.title);
-				holder.content.setText(data.content);
 			}
 
 			return super.getView(position, convertView, parent);

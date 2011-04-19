@@ -325,9 +325,6 @@ public class NavigationMapActivity extends MapActivity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		// Handle item selection
 		switch (item.getItemId()) {
-		case R.id.search:
-			onSearchClick(mMapView);
-			return true;
 		case R.id.places:
 			onPlacesClick(mMapView);
 			return true;

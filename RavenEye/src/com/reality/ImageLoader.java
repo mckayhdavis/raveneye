@@ -212,6 +212,7 @@ public class ImageLoader {
 						Bitmap bmp = getBitmap(photoToLoad.url);
 						cache.put(photoToLoad.url, bmp);
 						Object tag = photoToLoad.imageView.getTag();
+
 						// if (tag != null
 						// && ((String) tag).equals(photoToLoad.url)) {
 						BitmapDisplayer bd = new BitmapDisplayer(bmp,
@@ -243,13 +244,14 @@ public class ImageLoader {
 		}
 
 		public void run() {
+			imageView.clearAnimation();
+
 			if (bitmap != null) {
+				imageView.setScaleType(ScaleType.CENTER_CROP);
 				imageView.setImageBitmap(bitmap);
 			} else {
 				imageView.setImageDrawable(null);
 			}
-
-			imageView.clearAnimation();
 		}
 	}
 
