@@ -29,7 +29,10 @@ public class Directions<T extends Leg> {
 	}
 
 	public T currentWaypoint() {
-		return mWaypoints.get(mCurrentWaypointIndex);
+		if(mCurrentWaypointIndex < mWaypoints.size()) {
+			return mWaypoints.get(mCurrentWaypointIndex);
+		}
+		return null;
 	}
 
 	public T nextWaypoint() {

@@ -30,6 +30,7 @@ public class Place implements Comparable<Place>, Serializable {
 	private transient Drawable mImageResource = null;
 	private String mRemoteImageFileName = null;
 
+	private float mRating;
 	private int mReviewCount = 0;
 
 	public Place(int id, String name, String address, Coordinate coordinate) {
@@ -51,6 +52,14 @@ public class Place implements Comparable<Place>, Serializable {
 			mReviews = new ArrayList<Review>();
 		}
 		mReviews.add(review);
+	}
+	
+	public void setRating(float rating) {
+		mRating = rating;
+	}
+	
+	public float getRating() {
+		return mRating;
 	}
 
 	public void setReviewCount(int reviews) {

@@ -4,6 +4,11 @@ import java.io.Serializable;
 
 public class Review implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
 	public final String title;
 	public final String content;
 	public final String date;
