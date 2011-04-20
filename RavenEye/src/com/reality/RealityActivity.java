@@ -912,7 +912,7 @@ public class RealityActivity extends Activity implements LocationListener,
 						startLocation = steps.getJSONObject(k).getJSONObject(
 								"start_location");
 						endLocation = steps.getJSONObject(k).getJSONObject(
-								"start_location");
+								"end_location");
 
 						Coordinate start = new Coordinate(
 								Double.parseDouble(startLocation
