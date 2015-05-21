@@ -1,0 +1,1 @@
+An augmented reality Android application that focuses on POI discovery and way-point navigation through overlays on top of a camera surface.
